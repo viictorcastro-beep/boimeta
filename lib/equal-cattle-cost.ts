@@ -15,17 +15,20 @@ export type EqualCostRow = {
  * Não altera a área ou o orçamento do cenário do usuário. */
 export function equalCattleCost(input: Assumptions, anchor = '2026-09-10') {
   // Crédito medido não é transferível automaticamente para uma área redimensionada.
-  const a = { ...withoutOpportunityCows(input), includeEffluentSavings: false }, base = calculateCore(a);
-  const target = base.cashCostsB;
+  const a = { ...withoutOpportunityCows(input), includeEffluentSavings: false };
+  let target = 0;
   const rows: EqualCostRow[] = [];
   const outcome = (error: string | null) => ({ target, referenceArea: a.totalArea,
     feedlotCapacity: a.feedlotCapacity, feedlotUtilization: a.feedlotUtilization ?? 100,
     rows, error, method: equalCostMethod });
   const invalidNumber = Object.values(a).some(v => typeof v === 'number' && (!Number.isFinite(v) || v < 0));
   if (invalidNumber) return outcome('Use premissas numéricas finitas e não negativas para comparar custos.');
+  if (a.horizon > 100) return outcome('O horizonte ultrapassa o limite de 100 anos do simulador.');
   if ([a.silageShare, a.forageShare, a.silageRecovery, a.carcassYieldPercent,
     a.saleDeductionPercent, a.pastureMortalityPercent ?? 0, a.feedlotMortalityPercent ?? 0,
     a.feedlotUtilization ?? 100].some(v => v > 100)) return outcome('Percentuais físicos devem estar entre 0% e 100%.');
+  const base = calculateCore(a);
+  target = base.cashCostsB;
   if (!(a.totalArea > 0 && a.totalArea <= 1000000 && base.routeBInputValid && base.soldB > 0 && target > 0 && Number.isFinite(target)))
     return outcome('Confira área, lotação, pesos, GMD e custos de B para definir o custeio de referência.');
   const row = (route: 'A' | 'B', area: number): EqualCostRow => {

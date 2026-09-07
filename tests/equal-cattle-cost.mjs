@@ -39,7 +39,8 @@ assert.equal(row(limited,'A').bottleneck,'vagas-dia de cocho');
 for(const patch of [{totalArea:0},{stockingUa:0},{gmdB:0},{gmdPivotA:0},{feedlotCapacity:0},
   {feedlotCapacity:undefined},{silageShare:0},{silageShare:100},
   {pastureMortalityPercent:100},{feedlotMortalityPercent:100},
-  {pastureExtraCostHa:-1},{calfCost:NaN},{dietPriceDm:Infinity},{feedlotUtilization:101}]) {
+  {pastureExtraCostHa:-1},{calfCost:NaN},{dietPriceDm:Infinity},{feedlotUtilization:101},
+  {horizon:Infinity},{horizon:100000000000}]) {
   assert.ok(equalCattleCost({...a,...patch}).error,'dados inválidos não recebem conclusão: '+JSON.stringify(patch));
 }
 const capitalChanged=equalCattleCost({...a,investment:50000000,pivotInvestment:20000000,discountRate:35,horizon:20});
