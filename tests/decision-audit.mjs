@@ -343,4 +343,16 @@ test('Migração dos fixos não herda custo da tela alterada', () => {
   );
   close(cropFixedCostHa(r.crops[0]), 2000);
 });
+test('Prazos importados respeitam o limite operacional da interface', () => {
+  for (const key of ['setupDays', 'silageFirstReleaseDays', 'silageCutIntervalDays']) {
+    assert.throws(() => validateScenario(
+      { schema: 1, data: { operationalInputs: { [key]: 1e12 } } },
+      { operationalInputs: { [key]: 0 } },
+    ));
+    close(validateScenario(
+      { schema: 1, data: { operationalInputs: { [key]: 730 } } },
+      { operationalInputs: { [key]: 0 } },
+    ).operationalInputs[key], 730);
+  }
+});
 console.log(`decision-audit: ${count} testes aprovados`);

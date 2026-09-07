@@ -25,6 +25,7 @@ export function validateScenario<T>(document: unknown, template: T): T {
         entryArrobas: 80, decisionArrobas: 80, totalArea: 1000000,
         gmdPivotA: 10, gmdB: 10, gmdFeedlot: 10, gmd: 10, pastureGmd: 10,
         dietDmDay: 100, horizon: 100, silageCrops: 12,
+        setupDays: 730, silageFirstReleaseDays: 730, silageCutIntervalDays: 730,
       };
       if (upper[key] !== undefined && value > upper[key]) throw new Error('Fora do limite físico de simulação: ' + key);
       if ((key.endsWith('Percent') || ['deductionRate', 'fixedRate', 'share', 'silageShare',

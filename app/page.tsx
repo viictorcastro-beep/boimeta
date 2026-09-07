@@ -848,10 +848,15 @@ export default function Home() {
   const scenarioData = { assumptions, crops, scenarioMode, marketQuotes, marketUf, futureQuotes, futurePhysicalBasePrices, futurePhysicalBaseDates, futureUsdBrl, futureHedgePercent, cottonFiberRecovery, cottonSeedCredit, herdFlowInputs, allocationInputs, lotProfiles, animalTimelineInputs, cropMarketingWindows, doubleCropCalendar, operationalInputs, cropOperational, breedingEconomicsInputs, strategyStress, strategyCriterion, strategyMaxShare, strategyCapitalLimit, strategyErrorHa, appliedPriceMeta, gateAppliedPriceMeta, appliedFutureFingerprints };
   const restoreScenario = (raw: unknown) => {
     const data = validateScenario(raw, scenarioData);
+    // Validar tudo antes de alterar estado: um erro não restaura metade do arquivo.
+    const extras = validateScenario(raw, {
+      reviewInputs: reviewDefaults, operationalInputs: operationalDefaults,
+      scenarioAuditTrail: [] as string[],
+    });
     if (!['validation', 'exploration'].includes(data.scenarioMode) ||
       !['defensive', 'base', 'balanced'].includes(data.strategyCriterion) ||
       !marketUfOptions.includes(data.marketUf)) throw new Error('Modo ou UF incompatível.');
-    setReviewInputs(validateScenario(raw, { reviewInputs: reviewDefaults }).reviewInputs);
+    setReviewInputs(extras.reviewInputs);
     setAssumptions(data.assumptions);
     setCrops(data.crops);
     setScenarioMode(data.scenarioMode);
@@ -870,7 +875,7 @@ export default function Home() {
     setAnimalTimelineInputs(data.animalTimelineInputs);
     setCropMarketingWindows(data.cropMarketingWindows);
     setDoubleCropCalendar(data.doubleCropCalendar);
-    setOperationalInputs(validateScenario(raw, { operationalInputs: operationalDefaults }).operationalInputs);
+    setOperationalInputs(extras.operationalInputs);
     setCropOperational(data.cropOperational);
     setBreedingEconomicsInputs(data.breedingEconomicsInputs);
     setStrategyStress(data.strategyStress);
@@ -881,7 +886,7 @@ export default function Home() {
     setAppliedPriceMeta(data.appliedPriceMeta);
     setGateAppliedPriceMeta(data.gateAppliedPriceMeta);
     setAppliedFutureFingerprints(data.appliedFutureFingerprints);
-    const trail = validateScenario(raw, { scenarioAuditTrail: [] as string[] }).scenarioAuditTrail;
+    const trail = extras.scenarioAuditTrail;
     setScenarioAuditTrail([...trail.slice(-199), `Restaurado e recalculado no modelo ${MODEL_VERSION}; confirme novamente evidências e capacidade operacional.`]);
     setSavedStatus('Cenário restaurado. Confirmações operacionais precisam ser renovadas.');
   };
