@@ -608,7 +608,10 @@ assert.equal(
   'invalid-curve-source-date',
 );
 
-const core = calculateCore({ ...defaultAssumptions, horizon: 3 });
+assert.equal(defaultAssumptions.includeCows, false, 'nova base não compra vacas');
+assert.equal(calculateCore(defaultAssumptions).cowsSold, 0);
+// Preserva o caso histórico com vacas explicitamente, sem depender do padrão da UI.
+const core = calculateCore({ ...defaultAssumptions, includeCows: true, horizon: 3 });
 assert.ok(Number.isInteger(core.daysPivotA));
 assert.ok(Number.isInteger(core.daysFeedlot));
 assert.ok(Number.isInteger(core.daysB));

@@ -6,6 +6,8 @@ import { DecisionReview } from '@/components/decision-review';
 import { MarketCompass } from '@/components/market-compass';
 import { BusinessReview } from '@/components/business-review';
 import { DecisionLab } from '@/components/decision-lab';
+import { ClosedCampaignPanel } from '@/components/closed-campaign';
+import { closeCampaign, type CampaignInput } from '@/lib/closed-campaign';
 import { capitalStudy, inverseCropCapital, marginLevers, stockingStudy, feedlotTurningPoints, enterpriseIds, type LabInput } from '@/lib/decision-lab';
 import { capacityActions } from '@/lib/capacity-actions';
 import { rearingOnly, rearingStartupCash, rearingCapitalRequirement, stressRearing } from '@/lib/rearing-model';
@@ -1340,7 +1342,7 @@ export default function Home() {
   };
 
   const loadProductionBase = () => {
-    setAssumptions(current => ({ ...current, totalArea: 400, silageShare: 25,
+    setAssumptions(current => ({ ...current, totalArea: 400, silageShare: 25, includeCows: false,
       stockingUa: 7.8, entryWeight: 240, pivotExitWeight: 400, saleWeight: 540,
       gmdPivotA: 0.9, gmdFeedlot: 1.48, gmdB: 1, dietDmDay: 11.14, forageShare: 45 }));
     setAnimalTimelineInputs(current => ({ ...current, entryArrobas: 8,
@@ -1348,8 +1350,8 @@ export default function Home() {
     invalidateOperationalConfirmations();
     setActiveTab('quick');
     setScenarioAuditTrail(current => [...current.slice(-199),
-      'Base produtiva de 400 ha carregada; preços, custos, datas, cocho e orçamento atuais preservados.']);
-    setSavedStatus('Base produtiva: 400 ha, 300 de pasto + 100 de silagem, 240 → 400 → 540 kg. Preços, custos, datas e capacidade preservados.');
+      'Base produtiva de 400 ha sem vacas carregada; preços, custos, datas, cocho e orçamento atuais preservados.']);
+    setSavedStatus('Base produtiva sem vacas: 400 ha, 300 de pasto + 100 de silagem, 240 → 400 → 540 kg. Preços, custos, datas e capacidade preservados.');
   };
 
   const fetchMarketPrices = async () => {
@@ -4110,6 +4112,16 @@ export default function Home() {
     desiredUa: assumptions.stockingUa, forage: reviewInputs,
   }), [modelAssumptions, assumptions.calfCost, assumptions.stockingUa, animalTimelineInputs.gateValuePerKgLive, animalTimelineInputs.entryDate, strategyCapitalLimit, operationalInputs, allocationInputs.grainPurchasePriceSack, crops, automaticCalendar, reviewInputs]);
   const reportCapitalStudy = useMemo(() => activeTab === 'report' ? capitalStudy(decisionLabInput) : null, [activeTab, decisionLabInput]);
+  const campaignInput = useMemo<CampaignInput>(() => ({
+    a: modelAssumptions, anchor: animalTimelineInputs.entryDate,
+    gateNetPrice: animalTimelineInputs.gateValuePerKgLive,
+    setupDays: operationalInputs.setupDays, setupCost: operationalInputs.setupCost,
+    reserveCash: operationalInputs.reserveCash,
+    openingSilageTonnesDm: operationalInputs.openingSilageTonnesDm,
+    silageFirstReleaseDays: operationalInputs.silageFirstReleaseDays,
+    silageCutIntervalDays: operationalInputs.silageCutIntervalDays,
+  }), [modelAssumptions, animalTimelineInputs.entryDate, animalTimelineInputs.gateValuePerKgLive, operationalInputs]);
+  const closedCampaigns = useMemo(() => (['A', 'B', 'C'] as const).map(route => closeCampaign(campaignInput, route)), [campaignInput]);
   const leaseBurden =
     best.id !== 'none-feasible' && result.landLeaseCost > 0
       ? (result.landLeaseCost /
@@ -4540,6 +4552,22 @@ export default function Home() {
           : 'Validação real — sujeito aos gates e fontes informados',
       ],
       ['Data de exportação', new Date().toLocaleString('pt-BR')],
+      ['FECHAMENTO INTEGRAL DA CAMPANHA · não é margem anual estabilizada'],
+      ['Método', '365 coortes diárias de compras; nenhuma recompra na cauda; acompanhamento até última venda; sem vacas e efluente. Preços/GMD constantes, sem previsão automática. Mortalidade no fim da fase. Milho e outros ingredientes por reposição, sem venda duplicada.'],
+      ['Custos de área', 'Manutenção e arrendamento por dias decorridos até encerramento. Um programa de cortes inteiros de silagem, custeado no início. Estoque inicial valorado pelo custo local; sobra final sem receita. CAPEX fora da margem; reserva não é despesa.'],
+      ['Rota', 'Primeira compra', 'Última compra', 'Primeira venda', 'Última venda', 'Dias/animal', 'Dias/campanha', 'Comprados', 'Vendidos', 'Mortos', 'Estoque animal final', 'Receita R$', 'Custo operacional R$', 'Margem campanha R$', 'Margem/ha total/campanha R$', 'Equivalente anual/ha R$', 'CAPEX R$', 'Saldo após CAPEX R$', 'Capital com reserva R$'],
+      ...closedCampaigns.map(c => c.result ? [c.route, c.result.firstPurchaseDate, c.result.lastPurchaseDate, c.result.firstSaleDate, c.result.finalSaleDate, c.result.animalDays, c.result.elapsedDays, c.result.bought, c.result.sold, c.result.deadPasture + c.result.deadFeed, c.result.closingHeads, c.result.revenue, c.result.operatingCost, c.result.margin, c.result.marginHa, c.result.annualEquivalentHa, c.result.capex, c.result.netCashAfterCapex, c.result.requiredCapital] : [c.route, c.error ?? 'sem resultado']),
+      ['BALANÇO DA CAMPANHA', 'Rota', 'Pico UA', 'Limite UA', 'Pico cocho cab', 'Vagas úteis', 'Silagem inicial kg MS', 'Produzida kg MS', 'Consumida kg MS', 'Estoque final kg MS', 'Fração da entrada potencial aplicada'],
+      ...closedCampaigns.flatMap(c => c.result ? [['Balanço', c.route, c.result.peakUa, c.result.uaLimit, c.result.peakFeedHeads, c.result.feedLimit ?? 'não informado', c.result.silageOpeningKg, c.result.silageProducedKg, c.result.silageConsumedKg, c.result.silageEndingKg, c.result.scale]] : []),
+      ['CORTES PROGRAMADOS', 'Rota', 'Disponível em', 'kg MS', 'Custo R$'],
+      ...closedCampaigns.flatMap(c => c.result?.cuts.map(cut => ['Corte', c.route, cut.date, cut.kg, cut.cost]) ?? []),
+      ['MEMÓRIA DE CUSTOS DA CAMPANHA', 'Rota', 'Componente', 'Quantidade', 'Unidade', 'Custo unitário R$', 'Total R$', 'Origem/fórmula'],
+      ...closedCampaigns.flatMap(c => c.result?.costLines.map(line => ['Custo', c.route, line.label, line.quantity, line.unit, line.unitPrice, line.total, line.source]) ?? []),
+      ['PREMISSAS DA MEMÓRIA', 'Rota', 'Parâmetro (chave do motor)', 'Valor'],
+      ...closedCampaigns.flatMap(c => c.result ? Object.entries(c.result.calculationBasis).map(([key, value]) => ['Premissa', c.route, key, value ?? 'não se aplica']) : []),
+      ['FÓRMULAS', 'Margem = receita - custo operacional; R$/ha/campanha = margem/área total; equivalente anual/ha = margem/área total × 365/dias decorridos. Valores internos não arredondados; não é lucro líquido.'],
+      ['CAIXA MENSAL DA CAMPANHA', 'Rota', 'Mês', 'Entrada R$', 'Saída R$', 'Saldo do mês R$', 'Acumulado R$'],
+      ...closedCampaigns.flatMap(c => c.result?.cash.rows.map(row => ['Caixa', c.route, row.month, row.inflow, row.outflow, row.net, row.cumulative]) ?? []),
       ['Aviso', 'Ferramenta de exploração de cenários. Não substitui projeto agronômico, hidráulico, zootécnico, tributário, jurídico ou de crédito.'],
       ['Uso de dados de mercado', 'Referências públicas com atribuição. Confirme direitos de reutilização antes de uso comercial ou redistribuição.'],
       ['RADAR DE MERCADO', 'conab-weekly-v1 · descritivo; não extrapola preços. CONAB semanal por UF, fonte: https://consultaprecosdemercado.conab.gov.br/'],
@@ -5200,6 +5228,8 @@ export default function Home() {
             </div>
 
             <TabsContent value="quick" className="space-y-5">
+              <ClosedCampaignPanel campaigns={closedCampaigns} budget={strategyCapitalLimit} cowsActive={assumptions.includeCows} onExcludeCows={() => update('includeCows', false)} />
+              <details className="rounded-2xl border bg-card p-4"><summary className="cursor-pointer py-2 font-semibold">Comparação anual em operação contínua · pecuária e agricultura</summary><div className="mt-4 space-y-5">
               <div className="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 text-sm">
                 <p>Margens anuais de regime pleno · não são lucro líquido nem caixa do primeiro ano.</p>
                 <Button variant="outline" onClick={() => openEditor('farm')}>Ajustar cenário</Button>
@@ -5269,6 +5299,7 @@ export default function Home() {
                   <div className="space-y-3 p-5 text-sm leading-relaxed text-muted-foreground lg:p-6"><p><strong className="text-foreground">1.</strong> Mude uma variável: por exemplo, peso de decisão, GMD do cocho, preço do boi ou produtividade da soja.</p><p><strong className="text-foreground">2.</strong> Observe se o líder muda, quanto a margem/ha se desloca e qual gargalo físico cresceu.</p><p><strong className="text-foreground">3.</strong> Quando uma alternativa permanecer líder em uma faixa razoável, abra <button className="font-semibold text-[#315a3e] underline" onClick={() => setActiveTab('decision')} type="button">Decisão</button> e <button className="font-semibold text-[#315a3e] underline" onClick={() => setActiveTab('operations')} type="button">Operação & caixa</button> para fechar preços, capacidades, estoque e capital.</p><div className="rounded-xl border border-[#e2c37e]/35 bg-[#fff8e9] p-3 text-xs text-[#735a2a]"><strong>Importante:</strong> mudar a data desloca calendário, estoque e contratos. Ela só muda o preço automaticamente quando existir uma curva de mercado aplicada; o simulador não inventa preço futuro apenas pela passagem do tempo.</div></div>
                 </Panel>
               </div>
+              </div></details>
               </div></details>
             </TabsContent>
 
@@ -6197,6 +6228,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="report" className="space-y-5" id="report-output">
+              <ClosedCampaignPanel campaigns={closedCampaigns} budget={strategyCapitalLimit} cowsActive={assumptions.includeCows} report />
               <Panel><SectionTitle eyebrow="Mesmo capital · área parcial" title="Escalas que o orçamento permite estudar" text="Margens anuais de regime pleno, não lucro líquido ou retorno do primeiro ano. O quadro geral compara a área inteira; aqui a escala pode diminuir para caber no caixa." /><div className="p-5"><Table><TableHeader><TableRow><TableHead>Alternativa</TableHead><TableHead>Área testada de maior margem</TableHead><TableHead>Margem anual</TableHead><TableHead>Capital exigido</TableHead><TableHead>Capital para área inteira</TableHead></TableRow></TableHeader><TableBody>{reportCapitalStudy?.rows.map(r => <TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{one.format(r.best.area)} ha</TableCell><TableCell>{brl0.format(r.best.margin)}</TableCell><TableCell>{brl0.format(r.best.capital)}</TableCell><TableCell>{brl0.format(r.full.capital)}</TableCell></TableRow>)}</TableBody></Table><p className="mt-3 text-sm text-muted-foreground">Busca discreta, não ótimo global. Arrendamento ocioso, CAPEX e reserva mantidos. Não operar pode evitar perda incremental. CSV inclui alavancas, lotação, equivalência de custeio e preços de indiferença do cocho.</p></div></Panel>
               {scenarioMode === 'exploration' ? <div className="rounded-2xl border-2 border-[#d49e37]/45 bg-[#fff4d8] p-4 text-sm font-semibold text-[#6b4a12]">DEMONSTRAÇÃO — este relatório contém preços, capacidades, calendários e confirmações ilustrativas. Não use como recomendação, orçamento ou aprovação de investimento.</div> : null}
               <Panel>

@@ -10,7 +10,7 @@ import {
 } from './operational-model.ts';
 import { MONTH_DAYS } from './pasture-capacity.ts';
 
-export const REVIEW_VERSION = '2026-09-07.4';
+export const REVIEW_VERSION = '2026-09-07.5';
 export const reviewDefaults = {
   pastureYieldDmTonnesHa: 0,
   grazingEfficiencyPercent: 0,
@@ -26,7 +26,7 @@ export const reviewDefaults = {
 
 /** Ponte aditiva, ordem explícita. Não calibra os custos para reproduzir a apresentação. */
 export function referenceBridge(current: Assumptions) {
-  let state = { ...defaultAssumptions };
+  let state = { ...defaultAssumptions, includeCows: true };
   const referenceCore = calculateCore(state);
   const sourceTotalHa = BASE.ebitdaA / BASE.totalArea;
   let previous = referenceCore.ebitdaA / state.totalArea;

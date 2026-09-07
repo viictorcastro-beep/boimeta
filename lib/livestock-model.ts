@@ -112,7 +112,7 @@ export const defaultAssumptions: Assumptions = {
   silageCrops: 2,
   silageRecovery: 88.7,
   otherCostFactor: 100,
-  includeCows: true,
+  includeCows: false,
   cowSaleArroba: 300,
   cowBuyCost: 3_673.33,
   includeEffluentSavings: false,
@@ -173,7 +173,8 @@ export function irr(cashFlows: number[]) {
 }
 
 function safeDays(weightGain: number, gmd: number) {
-  return Math.max(1, Math.ceil(weightGain / Math.max(gmd, 0.05)));
+  return Number.isFinite(gmd) && gmd > 0 && Number.isFinite(weightGain)
+    ? Math.max(1, Math.ceil(weightGain / gmd)) : 1;
 }
 
 export function calculateCore(a: Assumptions) {

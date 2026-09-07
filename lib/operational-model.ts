@@ -265,7 +265,6 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
       totalDmConsumptionKg,
     });
     weekStart = weekEndExclusive;
-    if (rows.length > 160) break;
   }
 
   return {

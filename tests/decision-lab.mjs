@@ -20,6 +20,7 @@ const diet = (corn) =>
 const input = {
   a: {
     ...defaultAssumptions,
+    includeCows: true, // Imagens históricas desta suíte incluíam a janela de vacas.
     pivotExitWeight: 399.999,
     dietPriceDm: diet(65),
     feedlotCapacity: 2000,

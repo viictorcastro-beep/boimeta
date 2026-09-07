@@ -162,6 +162,7 @@ test('API rejeita peso de unidade incompatível', () => {
 });
 const a = {
   ...defaultAssumptions,
+  includeCows: true, // Contraprova histórica da imagem, não configuração-base atual.
   totalArea: 550,
   feedlotCapacity: 2000,
   feedlotUtilization: 90,

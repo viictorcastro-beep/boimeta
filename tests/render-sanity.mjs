@@ -28,6 +28,26 @@ try {
   assert.deepEqual(events, ['cancel'], 'touch não chega ao modelo');
   const html = renderToString(React.createElement(Page));
   assert.match(html, /BoiMeta/);
+  assert.match(html, /Quanto sobra ao terminar todos os bois/);
+  assert.match(html, /Memória de cálculo/);
+  assert.match(html, /Pasto e irrigação: custeio agregado/);
+  assert.match(html, /não custos locais auditados/);
+  assert.match(html, /Margem operacional da campanha/);
+  assert.match(html, /Equivalente anual/);
+  assert.match(html, /Comparação anual em operação contínua/);
+  assert.match(html, /não é um único lote/);
+  const { ClosedCampaignPanel } = await server.ssrLoadModule('../components/closed-campaign.tsx');
+  const { closeCampaign } = await server.ssrLoadModule('../lib/closed-campaign.ts');
+  const { defaultAssumptions: campaignDefaults } = await server.ssrLoadModule('../lib/livestock-model.ts');
+  const campaign = closeCampaign({ a: { ...campaignDefaults, gmdPivotA: 0.4 }, anchor: '2026-09-10',
+    gateNetPrice: 12.5, setupDays: 0, setupCost: 0, reserveCash: 0, openingSilageTonnesDm: 0,
+    silageFirstReleaseDays: 150, silageCutIntervalDays: 180 }, 'A');
+  const campaignHtml = renderToString(React.createElement(ClosedCampaignPanel, { campaigns: [campaign], budget: 1,
+    cowsActive: true, onExcludeCows: () => {}, report: true }));
+  assert.match(campaignHtml, /Excluir vacas de todo o cenário/);
+  assert.match(campaignHtml, /Faltam/);
+  assert.match(campaignHtml, /859/);
+  assert.match(campaignHtml, /Estoque animal final/);
   assert.match(html, /Validações/);
   assert.match(html, /Seu cenário/);
   for (const group of ['Fazenda e capital', 'Gado e desempenho', 'Alimentação e cocho', 'Lavouras irrigadas', 'Investimentos e extras']) assert.match(html, new RegExp(group));

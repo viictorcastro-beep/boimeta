@@ -34,6 +34,7 @@ jobs:
       - run: pnpm test:business
       - run: pnpm test:controls
       - run: pnpm test:lab
+      - run: pnpm test:campaign
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:render
