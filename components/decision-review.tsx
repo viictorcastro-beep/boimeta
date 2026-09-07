@@ -46,7 +46,7 @@ type Props = {
   operations: Record<string, number>;
   onOperation: (key: string, value: number) => void;
   budget: number;
-  onBudget: (value: number) => void;
+  onEditBudget: () => void;
   exportScenario: () => string;
   restoreScenario: (raw: unknown) => void;
   onResetReference: () => void;
@@ -286,11 +286,11 @@ export function DecisionReview(p: Props) {
           Capital e primeiro ano
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Field
-            label="Capital total disponível · R$"
-            value={p.budget}
-            onChange={p.onBudget}
-          />
+          <div className="rounded-xl border bg-secondary/30 p-3">
+            <p className="text-sm">Capital disponível para o projeto</p>
+            <p className="mt-1 font-mono font-semibold">{money(p.budget)}</p>
+            <Button variant="outline" className="mt-2" onClick={p.onEditBudget}>Editar no cenário</Button>
+          </div>
           {op('reserveCash', 'Reserva que não será investida · R$')}
           {op('setupCost', 'Preparação adicional não incluída no CAPEX · R$')}
           {op('setupDays', 'Espera até entrada do primeiro lote · dias', 730)}

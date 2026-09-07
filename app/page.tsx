@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumericInput } from '@/components/numeric-input';
 import { ParameterAdjustment } from '@/components/parameter-adjustment';
+import { ScenarioEditor, EditValue } from '@/components/scenario-editor';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -270,7 +271,7 @@ function Control({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="border-b border-border/65 pb-4 last:border-0 last:pb-0">
+    <div data-field-label={label} className="parameter-control border-b border-border/65 pb-4 last:border-0 last:pb-0">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
         <div className="flex min-w-0 max-w-full items-center gap-1.5">
@@ -773,6 +774,7 @@ export default function Home() {
   const [crops, setCrops] = useState<CropAssumption[]>(cropDefaults);
   const [activeTab, setActiveTab] = useState('quick');
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
+  const [editorGroup, setEditorGroup] = useState<string | null>('farm');
   const [scenarioMode, setScenarioMode] = useState<ScenarioMode>('validation');
   const [explorationLoading, setExplorationLoading] = useState(false);
   const explorationAutoloaded = useRef(false);
@@ -4485,6 +4487,19 @@ export default function Home() {
   };
 
   const showReport = () => openAnalysisTab('report');
+  const openEditor = (group: string, fieldLabel?: string) => {
+    setEditorGroup(group);
+    setMobileControlsOpen(true);
+    window.setTimeout(() => {
+      const field = fieldLabel ? Array.from(document.querySelectorAll<HTMLElement>('.scenario-editor [data-field-label]')).find((element) => element.dataset.fieldLabel === fieldLabel) : undefined;
+      for (let ancestor = field?.parentElement; ancestor && !ancestor.classList.contains('scenario-editor'); ancestor = ancestor.parentElement) {
+        if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+      }
+      const target = field?.querySelector<HTMLInputElement>('input') ?? document.getElementById('editor-' + group);
+      target?.scrollIntoView({ block: 'start' });
+      target?.focus({ preventScroll: true });
+    }, 0);
+  };
 
   const exportReport = () => {
     const quote = csvCell;
@@ -4953,7 +4968,7 @@ export default function Home() {
       ...strategyAllocation.rows.filter((row) => row.area > 0.01).map((row) => [row.label, row.area, row.share, row.cashCostHa, row.cashUsed, row.marginsAnnual.low, row.marginsAnnual.base, row.marginsAnnual.high]),
       ['Área alocada (ha)', strategyAllocation.allocatedArea],
       ['Área ociosa (ha)', strategyAllocation.idleArea],
-      ['Capital anual disponível (R$)', strategyCapitalLimit],
+      ['Capital total disponível para o projeto (R$)', strategyCapitalLimit],
       ['Capital usado (R$)', strategyAllocation.cashUsed],
       ['Capital viável', strategyAllocation.capitalFeasible ? 'sim' : 'não'],
       ['Déficit de capital (R$)', strategyAllocation.capitalShortfall],
@@ -5032,7 +5047,7 @@ export default function Home() {
 
 
       <div className="no-print border-b border-[#dce5d9] bg-[#edf3e8]">
-        <div className="mx-auto flex max-w-[1600px] flex-col justify-between gap-4 px-4 py-6 sm:px-6 lg:flex-row lg:items-end lg:px-8 lg:py-8">
+        <div className="mx-auto flex max-w-[1600px] flex-col justify-between gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-end lg:px-8 lg:py-5">
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
               <Badge className="bg-[#173e2c] text-white">Caso atual · {int.format(assumptions.totalArea)} ha</Badge>
@@ -5040,120 +5055,136 @@ export default function Home() {
               <Badge variant="outline" className="border-[#76917c]/30 bg-white/55">R$ nominais</Badge>
               {scenarioMode === 'exploration' ? <Badge className="bg-[#f2c879] text-[#68460c]">DEMONSTRAÇÃO · não validada</Badge> : null}
             </div>
-            <h1 className="max-w-4xl font-heading text-2xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl">
-              Compare cenários. Encontre o gargalo.
+            <h1 className="max-w-4xl font-heading text-xl font-semibold leading-tight tracking-[-0.035em] sm:text-2xl">
+              Compare os usos da sua área.
             </h1>
-            <details className="mt-3 text-sm"><summary className="cursor-pointer font-medium text-[#315a3e]">Como interpretar os resultados</summary>
+            <p className="mt-2 text-sm text-muted-foreground">1. Ajuste seu cenário · 2. Compare os resultados · 3. Confira o mercado.</p><details className="mt-2 text-sm"><summary className="cursor-pointer font-medium text-[#315a3e]">Como interpretar os resultados</summary>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#52685a] sm:text-base">
               Dimensionamento físico simplificado, compra de gado, custos, receitas e margem comparados sobre a mesma área-base com soja, milho e algodão irrigados em regime pleno. Insumos e área a montante aparecem separadamente. Calendário-base: Barra/BA; mudar a UF de preços não adapta regras agronômicas. Margens anuais de regime pleno não representam lucro líquido nem caixa do primeiro ano.
             </p>
             </details>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <div className={`rounded-xl border px-4 py-3 ${best.id === 'none-feasible' || scenarioMode === 'exploration' ? 'border-[#d49e37]/25 bg-[#fff7e8]' : 'border-[#78907c]/20 bg-white/65'}`}>
-              <p className="text-[10px] uppercase tracking-[0.13em] text-[#647768]">{best.id === 'none-feasible' ? 'Estado do ranking' : scenarioMode === 'exploration' ? 'Maior margem do exemplo' : 'Melhor margem/ha'}</p>
-              <p className="mt-1 max-w-44 text-sm font-semibold">{best.id === 'none-feasible' ? scenarioMode === 'exploration' ? 'Complete os dados do exemplo' : 'Preencha os pré-requisitos' : best.label}</p>
-            </div>
-            <div className={`rounded-xl px-4 py-3 ${best.id === 'none-feasible' || scenarioMode === 'exploration' ? 'border border-[#d49e37]/25 bg-[#fff7e8] text-[#714817]' : 'bg-[#d7f06b] text-[#173826]'}`}>
-              <p className="text-[10px] uppercase tracking-[0.13em] opacity-75">{best.id === 'none-feasible' ? 'Margem indisponível' : scenarioMode === 'exploration' ? 'Margem simulada' : 'Margem anual'}</p>
-              <p className="mt-1 font-mono text-lg font-bold">{best.id === 'none-feasible' ? 'n/d' : moneyCompact(best.margin)}</p>
-            </div>
-            <Button className="col-span-2 bg-[#173e2c] text-white hover:bg-[#22533a]" onClick={showReport}><FileText /> Ver relatório</Button>
+          <div className="flex flex-wrap gap-3">
+            <Button className="bg-[#173e2c] text-white" onClick={() => openEditor('farm')}><SlidersHorizontal /> Ajustar cenário</Button>
+            <Button variant="outline" onClick={showReport}><FileText /> Ver relatório</Button>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1600px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8 lg:py-7">
+      <div className="mx-auto grid max-w-[1600px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-8 lg:py-7">
         <aside id="quick-controls" data-mobile-open={mobileControlsOpen} className="quick-controls no-print min-w-0 self-start lg:sticky lg:top-[74px]">
-          <Panel className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/70 bg-[#f7f9f4] p-4">
-              <div>
-                <p id="quick-controls-title" tabIndex={-1} className="text-sm font-semibold">Ajustes rápidos</p>
-                <p className="text-[11px] text-muted-foreground">Mude um valor e compare na hora</p>
-              </div>
-              <SlidersHorizontal className="size-4 text-[#4d7859]" />
-            </div>
-            <button type="button" className="w-full border-b bg-[#eef5ef] p-3 text-sm font-semibold lg:hidden" onClick={() => { setMobileControlsOpen(false); document.getElementById('analysis-tabs')?.scrollIntoView(); }}>Concluir ajustes e ver resultados</button>
-            <div className="space-y-4 p-4">
-              <Control label="Área total" value={assumptions.totalArea} suffix="ha" min={1} max={5000} step={1} onChange={(value) => update('totalArea', value)} />
-              <Control label="Capital disponível" value={strategyCapitalLimit} suffix="R$" min={0} max={200000000} step={100000} onChange={setStrategyCapitalLimit} />
-              <label className="block rounded-xl border border-[#bfd0bd] bg-[#eef5ef] p-3" htmlFor="scenario-anchor-date"><span className="text-[11px] font-semibold text-[#315a3e]">Entrada do gado · marco único</span><Input id="scenario-anchor-date" className="mt-2 h-9 bg-white text-xs" type="date" value={animalTimelineInputs.entryDate} onChange={(event) => { if (strictIsoDate(event.target.value)) updateAnimalTimeline('entryDate', event.target.value); }} /><span className={`mt-2 block text-[9px] leading-relaxed ${automaticCalendarUsesFallback ? 'text-[#9b4b2f]' : 'text-muted-foreground'}`}>{automaticCalendarUsesFallback ? `Data inválida: calendário temporariamente ancorado em ${dateBr(asOfDate)}.` : `Gera automaticamente plantio, colheita e janela operacional de ${COMMON_HORIZON_DAYS} dias.`}</span></label>
-              <Control label="Peso de entrada" value={animalTimelineInputs.entryArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickEntryArrobas} />
-              <Control label="Peso da decisão" value={animalTimelineInputs.decisionArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickDecisionArrobas} />
-              <Control label="Peso de saída" value={liveKgToArrobas(assumptions.saleWeight)} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickSaleArrobas} />
-              <Control label="Arroba do boi" value={assumptions.priceArroba} suffix="R$/@" min={100} max={700} step={0.5} onChange={(value) => update('priceArroba', value)} />
-              <Control label="Bezerro de 240 kg" value={assumptions.calfCost} suffix="R$/cab" min={500} max={10000} step={25} onChange={(value) => update('calfCost', value)} />
-              <Control label="GMD recria · A/C" value={assumptions.gmdPivotA} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdPivotA', value)} />
-              <Control label="GMD ciclo no pivô · B" value={assumptions.gmdB} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdB', value)} />
-              <Control label="GMD no confinamento" value={assumptions.gmdFeedlot} suffix="kg/d" min={0.5} max={3} step={0.01} onChange={(value) => update('gmdFeedlot', value)} />
-
-              <details className="group rounded-xl border border-border/70 bg-[#fafbf8] p-3">
-                <summary className="cursor-pointer list-none text-xs font-semibold">Mais premissas · opcional</summary>
-                <div className="mt-4 space-y-4">
-                  <Control label="Arrendamento anual" value={assumptions.landLeaseHa} suffix="R$/ha" min={0} max={10000} step={50} onChange={(value) => update('landLeaseHa', value)} />
-                  <Control label="Lotação média" value={assumptions.stockingUa} suffix="UA/ha" min={1} max={30} step={0.1} onChange={(value) => update('stockingUa', value)} />
-                  <Control label="Prêmio de rendimento no cocho" value={assumptions.feedlotCarcassYieldLiftPercent} suffix="p.p." min={0} max={10} step={0.1} onChange={(value) => update('feedlotCarcassYieldLiftPercent', value)} />
-                  <Control label="Área de silagem" value={assumptions.silageShare} suffix="%" min={5} max={80} step={1} onChange={(value) => update('silageShare', value)} />
-                  <Control label="Dieta manual (MS)" value={assumptions.dietPriceDm} suffix="R$/kg" min={0.2} max={6} step={0.01} onChange={(value) => update('dietPriceDm', value)} />
-                  <Control label="Complemento + mistura por kg MS total" value={assumptions.dietOtherCostDm} suffix="R$/kg" min={0} max={6} step={0.01} onChange={(value) => update('dietOtherCostDm', value)} />
-                  <Control label="Preço do suplemento" value={assumptions.supplementPrice} suffix="R$/kg" min={1} max={20} step={0.05} onChange={(value) => update('supplementPrice', value)} />
-                  <Control label="Compra da vaca magra" value={assumptions.cowBuyCost} suffix="R$/cab" min={0} max={20000} step={25} onChange={(value) => update('cowBuyCost', value)} />
-                  <Control label="Venda da vaca gorda" value={assumptions.cowSaleArroba} suffix="R$/@" min={0} max={1000} step={0.5} onChange={(value) => update('cowSaleArroba', value)} />
-                  <Control label="Custo da silagem por corte" value={assumptions.silageCostHaCut} suffix="R$/ha" min={0} max={30000} step={50} onChange={(value) => update('silageCostHaCut', value)} />
-                  <Control label="Produtividade da silagem por corte" value={assumptions.silageYieldDm} suffix="t MS/ha" min={5} max={60} step={0.5} onChange={(value) => update('silageYieldDm', value)} />
-                  <Control label="Cortes de silagem por ano" value={assumptions.silageCrops} suffix="cortes" min={1} max={4} step={1} onChange={(value) => update('silageCrops', Math.round(value))} />
-                  <Control label="Área-alvo do efluente" value={assumptions.effluentArea} suffix="ha" min={0} max={assumptions.totalArea} step={10} onChange={(value) => update('effluentArea', Math.min(value, assumptions.totalArea))} />
-                  <Control label="Lâmina-alvo do efluente" value={assumptions.effluentDepthMm} suffix="mm/ano" min={0} max={1000} step={10} onChange={(value) => update('effluentDepthMm', value)} />
-                  <Control label="Valor bruto calibrado" value={assumptions.effluentValueM3} suffix="R$/m³" min={0} max={100} step={0.1} onChange={(value) => update('effluentValueM3', value)} />
-                  <Control label="Módulo-base fertirrigado" value={allocationInputs.effluentReferenceAreaHa} suffix="ha" min={1} max={5000} step={1} onChange={(value) => updateAllocation('effluentReferenceAreaHa', value)} />
-                  <Control label="Lâmina anual do módulo-base" value={allocationInputs.effluentReferenceDepthMm} suffix="mm/ano" min={1} max={1000} step={5} onChange={(value) => updateAllocation('effluentReferenceDepthMm', value)} />
-                  <Control label="Animais do módulo-base" value={allocationInputs.effluentReferenceAnnualHeads} suffix="cab/ano" min={1} max={500000} step={25} onChange={(value) => updateAllocation('effluentReferenceAnnualHeads', value)} />
-                  <Control label="Dias no cocho do módulo-base" value={allocationInputs.effluentReferenceConfinementDays} suffix="dias" min={1} max={365} step={1} onChange={(value) => updateAllocation('effluentReferenceConfinementDays', value)} />
-                  <Control label="CAPEX comum do pivô" value={assumptions.pivotInvestment} suffix="R$" min={0} max={200000000} step={100000} onChange={(value) => update('pivotInvestment', value)} />
-                  <Control label="Investimento incremental" value={assumptions.investment} suffix="R$" min={0} max={100000000} step={100000} onChange={(value) => update('investment', value)} />
-                  <Control label="TMA" value={assumptions.discountRate} suffix="% a.a." min={0} max={40} step={0.5} onChange={(value) => update('discountRate', value)} />
-                  <Control label="Horizonte" value={assumptions.horizon} suffix="anos" min={1} max={30} step={1} onChange={(value) => update('horizon', value)} />
-
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-[#bfd0bd] bg-[#eef5ef] p-3">
+          <ScenarioEditor openGroup={editorGroup} onGroup={setEditorGroup}
+            margin={best.id === 'none-feasible' ? 'n/d' : moneyCompact(best.margin)}
+            onCompare={() => { setMobileControlsOpen(false); openAnalysisTab('quick'); }}
+            groups={[{ id: 'farm', title: 'Fazenda e capital', summary: int.format(assumptions.totalArea) + ' ha · ' + moneyCompact(strategyCapitalLimit), children: <><Control label="Área total" value={assumptions.totalArea} suffix="ha" min={1} max={5000} step={1} onChange={(value) => update('totalArea', value)} />
+<Control label="Capital disponível" value={strategyCapitalLimit} suffix="R$" min={0} max={500000000} step={100000} onChange={updateStrategyCapitalLimit} />
+<p className="text-xs text-muted-foreground">Capital para custeio e novos investimentos. Compra da terra não incluída; reserva e preparação são detalhadas em Validações.</p>
+<label className="block rounded-xl border border-[#bfd0bd] bg-[#eef5ef] p-3" htmlFor="scenario-anchor-date"><span className="text-[11px] font-semibold text-[#315a3e]">Entrada do gado · marco único</span><Input id="scenario-anchor-date" className="mt-2 h-9 bg-white text-xs" type="date" value={animalTimelineInputs.entryDate} onChange={(event) => { if (strictIsoDate(event.target.value)) updateAnimalTimeline('entryDate', event.target.value); }} /><span className={`mt-2 block text-[9px] leading-relaxed ${automaticCalendarUsesFallback ? 'text-[#9b4b2f]' : 'text-muted-foreground'}`}>{automaticCalendarUsesFallback ? `Data inválida: calendário temporariamente ancorado em ${dateBr(asOfDate)}.` : `Gera automaticamente plantio, colheita e janela operacional de ${COMMON_HORIZON_DAYS} dias.`}</span></label>
+<details className="editor-detail"><summary>Arrendamento</summary><div className="mt-4 space-y-4"><Control label="Arrendamento anual" value={assumptions.landLeaseHa} suffix="R$/ha" min={0} max={10000} step={50} onChange={(value) => update('landLeaseHa', value)} /></div></details></> },
+{ id: 'cattle', title: 'Gado e desempenho', summary: int.format(assumptions.entryWeight) + ' → ' + int.format(assumptions.saleWeight) + ' kg · recria ' + two.format(assumptions.gmdPivotA) + ' kg/d', children: <><p className="text-sm text-muted-foreground">Compra, venda do magro e venda do gordo têm preços e unidades diferentes.</p>
+<Control label="Bezerro de 240 kg" value={assumptions.calfCost} suffix="R$/cab" min={500} max={10000} step={25} onChange={(value) => update('calfCost', value)} />
+<Control label="Magro · valor líquido na porteira" value={animalTimelineInputs.gateValuePerKgLive} suffix="R$/kg vivo" min={0} max={40} step={0.1} onChange={value => updateAnimalTimeline('gateValuePerKgLive', value)} />
+<Control label="Arroba do boi" value={assumptions.priceArroba} suffix="R$/@" min={100} max={700} step={0.5} onChange={(value) => update('priceArroba', value)} />
+<details className="editor-detail"><summary>Pesos, ganhos e lotação</summary><div className="mt-4 space-y-4"><p className="text-xs text-muted-foreground">GMD é o ganho médio diário. A/C usam recria; B termina no pasto. As arrobas de peso seguem a conversão informada na análise do lote.</p><Control label="Peso de entrada" value={animalTimelineInputs.entryArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickEntryArrobas} />
+<Control label="Peso da decisão" value={animalTimelineInputs.decisionArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickDecisionArrobas} />
+<Control label="Peso de saída" value={liveKgToArrobas(assumptions.saleWeight)} suffix="@/cab" min={1} max={40} step={0.1} onChange={updateQuickSaleArrobas} />
+<Control label="GMD recria · A/C" value={assumptions.gmdPivotA} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdPivotA', value)} />
+<Control label="GMD ciclo no pivô · B" value={assumptions.gmdB} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdB', value)} />
+<Control label="GMD no confinamento" value={assumptions.gmdFeedlot} suffix="kg/d" min={0.5} max={3} step={0.01} onChange={(value) => update('gmdFeedlot', value)} />
+<Control label="Lotação média" value={assumptions.stockingUa} suffix="UA/ha" min={1} max={30} step={0.1} onChange={(value) => update('stockingUa', value)} />
+<Control label="Prêmio de rendimento no cocho" value={assumptions.feedlotCarcassYieldLiftPercent} suffix="p.p." min={0} max={10} step={0.1} onChange={(value) => update('feedlotCarcassYieldLiftPercent', value)} />
+<Control label="Preço do suplemento" value={assumptions.supplementPrice} suffix="R$/kg" min={1} max={20} step={0.05} onChange={(value) => update('supplementPrice', value)} /></div></details></> },
+{ id: 'feed', title: 'Alimentação e cocho', summary: one.format(assumptions.silageShare) + '% silagem · ' + int.format(allocationInputs.feedlotCapacity) + ' vagas', children: <><Control label="Área de silagem" value={assumptions.silageShare} suffix="%" min={5} max={80} step={1} onChange={(value) => update('silageShare', value)} />
+<Control label="Vagas nominais de confinamento" value={allocationInputs.feedlotCapacity} suffix="vagas" min={0} max={100000} step={50} onChange={value => updateAllocation('feedlotCapacity', value)} />
+<Control label="Milho comprado · preço entregue" value={allocationInputs.grainPurchasePriceSack} suffix="R$/sc" min={0} max={500} step={0.5} onChange={value => updateAllocation('grainPurchasePriceSack', value)} />
+<p className="text-xs text-muted-foreground">Milho entregue inclui frete e condições de compra. Não é o preço de venda da lavoura.</p>
+<div className="flex items-center justify-between gap-4 rounded-xl border border-[#bfd0bd] bg-[#eef5ef] p-3">
                 <div><p className="text-xs font-semibold">Dieta: silagem local + milho comprado</p><p className="text-[10px] text-muted-foreground">Atual: {brl2.format(modelAssumptions.dietPriceDm)}/kg MS</p></div>
                 <Switch aria-label="Vincular dieta à silagem local e ao milho comprado" checked={assumptions.linkFeedToCropCosts} onCheckedChange={(checked) => update('linkFeedToCropCosts', checked)} />
               </div>
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
+{!assumptions.linkFeedToCropCosts ? <Control label="Dieta manual (MS)" value={assumptions.dietPriceDm} suffix="R$/kg" min={0.2} max={6} step={0.01} onChange={(value) => update('dietPriceDm', value)} /> : <p className="text-xs text-muted-foreground">Dieta calculada pelos ingredientes. O valor manual permanece guardado.</p>}
+<details className="editor-detail"><summary>Custos da silagem e composição</summary><div className="mt-4 space-y-4"><Control label="Complemento + mistura por kg MS total" value={assumptions.dietOtherCostDm} suffix="R$/kg" min={0} max={6} step={0.01} onChange={(value) => update('dietOtherCostDm', value)} />
+<Control label="Custo da silagem por corte" value={assumptions.silageCostHaCut} suffix="R$/ha" min={0} max={30000} step={50} onChange={(value) => update('silageCostHaCut', value)} />
+<Control label="Produtividade da silagem por corte" value={assumptions.silageYieldDm} suffix="t MS/ha" min={5} max={60} step={0.5} onChange={(value) => update('silageYieldDm', value)} />
+<Control label="Cortes de silagem por ano" value={assumptions.silageCrops} suffix="cortes" min={1} max={4} step={1} onChange={(value) => update('silageCrops', Math.round(value))} /><div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
                 <div><p className="text-xs font-semibold">Milho próprio · valoração na alocação</p><p className="text-[10px] text-muted-foreground">{assumptions.feedUseOpportunityCost ? 'Usa preço líquido após deduções evitáveis' : 'Usa custo caixa local por kg MS'}</p></div>
                 <Switch aria-label="Usar custo de oportunidade do milho" checked={assumptions.feedUseOpportunityCost} onCheckedChange={(checked) => update('feedUseOpportunityCost', checked)} />
-              </div>
-
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
+              </div></div></details>
+<Button variant="outline" className="w-full" onClick={() => { setMobileControlsOpen(false); openAnalysisTab('allocation'); }}>Ver alimento próprio e estoques</Button></> },
+{ id: 'crops', title: 'Lavouras irrigadas', summary: 'Soja, milho e algodão · preços de venda e produtividade', children: <><p className="text-sm text-muted-foreground">Preços e produção da base irrigada; custos de cultivo já preenchidos. Cotação consultada só entra após você aplicar.</p>
+{crops.map((crop) => <section className="rounded-xl border p-3 space-y-3" key={crop.id} aria-label={crop.shortName}>
+<h3 className="text-sm font-semibold">{crop.shortName}</h3>
+<Control label={'Preço de venda · ' + crop.shortName} value={crop.price} suffix={'R$/' + crop.unit.split('/')[0]} min={0} max={crop.id === 'cotton-irrigated' ? 500 : 1000} step={0.5} onChange={(value) => updateCrop(crop.id, 'price', value)} />
+<Control label={'Produtividade · ' + crop.shortName} value={crop.yield} suffix={crop.unit} min={0} max={crop.id === 'cotton-irrigated' ? 1000 : 500} step={1} onChange={(value) => updateCrop(crop.id, 'yield', value)} />
+</section>)}
+<Button variant="outline" className="w-full" onClick={() => { setMobileControlsOpen(false); openAnalysisTab('costs'); }}>Detalhar custos de cultivo</Button></> },
+{ id: 'investment', title: 'Investimentos e extras', summary: 'Pivô ' + moneyCompact(assumptions.pivotInvestment) + ' · cocho ' + moneyCompact(assumptions.investment) + (assumptions.includeCows ? ' · vacas incluídas' : '') + (assumptions.includeEffluentSavings ? ' · efluente hipotético' : ''), children: <><p className="text-sm text-muted-foreground">Informe somente investimento novo. Não relance a estrutura já paga.</p>
+<Control label="CAPEX comum do pivô" value={assumptions.pivotInvestment} suffix="R$" min={0} max={200000000} step={100000} onChange={(value) => update('pivotInvestment', value)} />
+<Control label="Investimento incremental" value={assumptions.investment} suffix="R$" min={0} max={100000000} step={100000} onChange={(value) => update('investment', value)} />
+<details className="editor-detail"><summary>Taxa de retorno e prazo</summary><div className="mt-4 space-y-4"><p className="text-xs text-muted-foreground">TMA é a taxa mínima de atratividade. Afeta o valor do investimento, não a receita operacional.</p><Control label="TMA" value={assumptions.discountRate} suffix="% a.a." min={0} max={40} step={0.5} onChange={(value) => update('discountRate', value)} /><Control label="Horizonte" value={assumptions.horizon} suffix="anos" min={1} max={30} step={1} onChange={(value) => update('horizon', value)} /></div></details>
+<details className="editor-detail"><summary>Vacas de oportunidade · {assumptions.includeCows ? 'incluídas' : 'não incluídas'}</summary><div className="mt-4 space-y-4"><div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
                 <div><p className="text-xs font-semibold">Vacas de oportunidade</p><p className="text-[10px] text-muted-foreground">Um lote pós-silagem na mesma área; ative só com janela agronômica confirmada</p></div>
                 <Switch aria-label="Incluir vacas de oportunidade" checked={assumptions.includeCows} onCheckedChange={(checked) => update('includeCows', checked)} />
-              </div>
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
+              </div>{assumptions.includeCows ? <><Control label="Compra da vaca magra" value={assumptions.cowBuyCost} suffix="R$/cab" min={0} max={20000} step={25} onChange={(value) => update('cowBuyCost', value)} /><Control label="Venda da vaca gorda" value={assumptions.cowSaleArroba} suffix="R$/@" min={0} max={1000} step={0.5} onChange={(value) => update('cowSaleArroba', value)} /></> : null}</div></details>
+<details className="editor-detail"><summary>Efluente · {assumptions.includeEffluentSavings ? 'hipótese incluída' : 'sem crédito'}</summary><div className="mt-4 space-y-4"><div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
                 <div><p className="text-xs font-semibold">Crédito bruto calibrado do efluente</p><p className="text-[10px] text-muted-foreground">Escala pelas cabeças-dia próprias; exige medição, análise, eficiência e licenças</p></div>
                 <Switch aria-label="Incluir crédito hipotético do efluente" checked={assumptions.includeEffluentSavings} onCheckedChange={(checked) => update('includeEffluentSavings', checked)} />
-              </div>
-                </div>
-              </details>
-              <Button variant="outline" size="sm" className="w-full" onClick={resetScenario}>
-                <RefreshCw /> Restaurar premissas de referência
-              </Button>
-            </div>
-          </Panel>
+              </div>{assumptions.includeEffluentSavings ? <><Control label="Área-alvo do efluente" value={assumptions.effluentArea} suffix="ha" min={0} max={assumptions.totalArea} step={10} onChange={(value) => update('effluentArea', Math.min(value, assumptions.totalArea))} />
+<Control label="Lâmina-alvo do efluente" value={assumptions.effluentDepthMm} suffix="mm/ano" min={0} max={1000} step={10} onChange={(value) => update('effluentDepthMm', value)} />
+<Control label="Valor bruto calibrado" value={assumptions.effluentValueM3} suffix="R$/m³" min={0} max={100} step={0.1} onChange={(value) => update('effluentValueM3', value)} />
+<Control label="Módulo-base fertirrigado" value={allocationInputs.effluentReferenceAreaHa} suffix="ha" min={1} max={5000} step={1} onChange={(value) => updateAllocation('effluentReferenceAreaHa', value)} />
+<Control label="Lâmina anual do módulo-base" value={allocationInputs.effluentReferenceDepthMm} suffix="mm/ano" min={1} max={1000} step={5} onChange={(value) => updateAllocation('effluentReferenceDepthMm', value)} />
+<Control label="Animais do módulo-base" value={allocationInputs.effluentReferenceAnnualHeads} suffix="cab/ano" min={1} max={500000} step={25} onChange={(value) => updateAllocation('effluentReferenceAnnualHeads', value)} />
+<Control label="Dias no cocho do módulo-base" value={allocationInputs.effluentReferenceConfinementDays} suffix="dias" min={1} max={365} step={1} onChange={(value) => updateAllocation('effluentReferenceConfinementDays', value)} /></> : null}</div></details></> }]}
+            footer={<details className="editor-detail"><summary>Base e restauração do cenário</summary><div className="mt-3 space-y-3">
+              <p className="text-xs text-muted-foreground">Salve antes de substituir valores. Carregar a base de 400 ha preserva preços, custos, data, orçamento e vagas; restaurar tudo substitui as premissas.</p>
+              <Button variant="outline" className="w-full" onClick={loadProductionBase}>Usar base produtiva · 400 ha</Button>
+              <Button variant="outline" className="w-full" onClick={resetScenario}><RefreshCw /> Restaurar premissas de referência</Button>
+            </div></details>}
+          />
         </aside>
 
         <div className="min-w-0" id="analysis-tabs" tabIndex={-1}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="no-print mb-5 flex flex-wrap items-start gap-2 pb-1">
               <TabsList className="primary-tabs h-auto rounded-xl border border-border/70 bg-card p-1 shadow-sm">
-                <TabsTrigger className="px-3 py-2" value="quick"><Gauge /> Simulador rápido</TabsTrigger>
-                <TabsTrigger className="px-3 py-2" value="audit"><FileText /> Premissas & caixa</TabsTrigger>
-                <TabsTrigger className="px-3 py-2" value="decision"><Gauge /> Decisão</TabsTrigger>
-                <TabsTrigger className="px-3 py-2" value="operations"><Tractor /> Operação & caixa</TabsTrigger>
+                <TabsTrigger className="px-3 py-2" value="quick"><Gauge /> Resultado</TabsTrigger>
+                <TabsTrigger className="px-3 py-2" value="market"><TrendingUp /> Mercado</TabsTrigger>
+                <TabsTrigger className="px-3 py-2" value="audit"><FileText /> Validações</TabsTrigger>
                 <TabsTrigger className="px-3 py-2" value="report"><FileText /> Relatório</TabsTrigger>
               </TabsList>
-              <details className="relative rounded-xl border border-border/70 bg-card px-3 py-2 shadow-sm"><summary className="cursor-pointer list-none text-xs font-semibold text-muted-foreground">Análise avançada</summary><div className="mt-3 grid min-w-56 gap-1">{([['dimension', 'Dimensionamento'], ['allocation', 'Rebanho & alocação'], ['compare', 'Comparar usos'], ['costs', 'Custos detalhados'], ['sensitivity', 'Pontos de equilíbrio'], ['futures', 'Mercado futuro'], ['strategy', 'Ciclo & mix'], ['evidence', 'Evidências']] as const).map(([tab, label]) => <button className={`rounded-lg px-3 py-2 text-left text-xs hover:bg-[#edf3e8] ${activeTab === tab ? 'bg-[#edf3e8] font-semibold text-[#315a3e]' : ''}`} key={tab} onClick={(event) => { setActiveTab(tab); event.currentTarget.closest('details')?.removeAttribute('open'); }} type="button">{label}</button>)}</div></details>
+              <details className="relative rounded-xl border border-border/70 bg-card px-3 py-2 shadow-sm"><summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Estudos detalhados</summary><div className="mt-3 grid min-w-56 gap-1">{([['viability', 'Capital e viabilidade'], ['decision', 'Decisão validada'], ['operations', 'Operação & caixa'], ['dimension', 'Dimensionamento'], ['allocation', 'Rebanho & alocação'], ['compare', 'Comparar usos'], ['costs', 'Custos detalhados'], ['sensitivity', 'Pontos de equilíbrio'], ['futures', 'Mercado futuro'], ['strategy', 'Ciclo & mix'], ['evidence', 'Evidências']] as const).map(([tab, label]) => <button className={`rounded-lg px-3 py-2 text-left text-sm hover:bg-[#edf3e8] ${activeTab === tab ? 'bg-[#edf3e8] font-semibold text-[#315a3e]' : ''}`} key={tab} onClick={(event) => { setActiveTab(tab); event.currentTarget.closest('details')?.removeAttribute('open'); }} type="button">{label}</button>)}</div></details>
             </div>
 
             <TabsContent value="quick" className="space-y-5">
+              <div className="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 text-sm">
+                <p>Margens anuais de regime pleno · não são lucro líquido nem caixa do primeiro ano.</p>
+                <Button variant="outline" onClick={() => openEditor('farm')}>Ajustar cenário</Button>
+              </div>
+              <Panel className="overflow-hidden">
+                <div className="grid gap-4 bg-[#113724] p-5 text-white lg:grid-cols-[1.2fr_1fr] lg:p-6">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/55">Leitura simples do cenário</p>
+                    <h2 className="mt-3 max-w-2xl font-heading text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{best.id === 'none-feasible' ? 'Nenhuma alternativa integral cabe no orçamento. As margens continuam visíveis; reduza a área ou consulte o mix parcial.' : allOperatingLosses ? 'Nenhuma alternativa dentro do orçamento apresenta margem operacional positiva. Compare a menor perda com custos inevitáveis de adiar a operação; não há aprovação de investimento.' : budgetRanking.indifferent ? 'As melhores alternativas estão dentro da faixa de indiferença informada. Compare risco, caixa e esforço operacional.' : best.id === 'cattle-a' ? 'A recria seguida de confinamento apresenta a maior margem anual nesta combinação.' : best.id === 'cattle-b' ? 'Fechar o ciclo no pivô, sem confinamento próprio, apresenta a maior margem anual nesta combinação.' : best.id === 'double-crop' ? 'A sucessão soja + milho apresenta a maior margem anual por hectare nesta combinação.' : `${best.label} apresenta a maior margem anual por hectare nesta combinação.`}</h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/65">{best.id === 'none-feasible' ? 'Não há vencedor dentro do capital informado. A tabela preserva as margens teóricas; ajuste a escala ou estude um uso parcial da área.' : allOperatingLosses ? 'A menor perda modelada não é uma indicação para investir. Revise preços e custos e compare também o custo de esperar.' : budgetRanking.indifferent ? 'Uma pequena diferença de margem não decide o investimento. Confira capital, risco e capacidade operacional nas Validações.' : 'Este é o maior valor modelado com os preços, pesos, ganhos e custos informados; não é aprovação de investimento. Confira caixa, capacidade e dados nas Validações.'}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem anual</p><p className="mt-2 font-mono text-xl font-bold text-[#d7f06b]">{moneyCompact(best.margin)}</p></div>
+                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem por hectare</p><p className="mt-2 font-mono text-xl font-bold">{brl0.format(best.marginHa)}</p></div>
+                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Diferença para o 2º</p><p className="mt-2 font-mono text-lg font-bold">{runnerUp ? `${brl0.format(best.marginHa - runnerUp.marginHa)}/ha` : 'n/d'}</p></div>
+                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem / custo operacional</p><p className="mt-2 font-mono text-lg font-bold">{percentage(best.roi)}</p></div>
+                  </div>
+                </div>
+              </Panel>
+              <div className="rounded-xl border bg-[#fff8e9] p-4 text-sm">
+                <p><strong>Pasto: {localPasture.limited ? 'lotação limitada pela oferta informada' : localPasture.known ? 'capacidade calculada com os dados informados' : 'capacidade ainda presumida'}.</strong> {result.inputErrors.length ? 'Há premissas inválidas: confira os avisos no topo.' : 'A comparação não dispensa caixa, alimento e validação de campo.'}</p>
+                <button type="button" className="mt-2 min-h-11 font-semibold underline" onClick={() => openAnalysisTab('audit')}>Ver o que precisa ser validado</button>
+              </div>
+              <Panel>
+                <SectionTitle eyebrow={`Comparação em tempo real · ${int.format(assumptions.totalArea)} ha`} title="O que acontece em cada alternativa" text="Todas usam a mesma área-base e as premissas atuais. O primeiro lugar é o maior valor modelado por hectare; a diferença negativa mostra quanto cada alternativa está atrás." />
+                <div className="overflow-x-auto"><Table><TableHeader><TableRow className="bg-[#f4f7f1]"><TableHead className="pl-5">Alternativa</TableHead><TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Custo</TableHead><TableHead className="text-right">Margem total</TableHead><TableHead className="text-right">Margem/ha</TableHead><TableHead className="text-right">Diferença para líder</TableHead><TableHead className="pr-5 text-right">Estado</TableHead></TableRow></TableHeader><TableBody>{ranking.map((row, index) => <TableRow className={row.id === best.id ? 'bg-[#f2f7da]/65' : ''} key={`quick-row-${row.id}`}><TableCell className="pl-5"><span className="font-semibold">{index + 1}. {row.label}</span><p className="mt-1 text-[9px] text-muted-foreground">{row.production}</p></TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.revenue)}</TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.cost)}</TableCell><TableCell className={`text-right font-mono text-xs font-semibold ${row.margin >= 0 ? 'text-[#2d6c45]' : 'text-[#9b4b2f]'}`}>{moneyCompact(row.margin)}</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(row.marginHa)}</TableCell><TableCell className="text-right font-mono text-xs">{row.id === best.id ? 'líder no orçamento' : `${brl0.format(row.marginHa - best.marginHa)}/ha`}</TableCell><TableCell className="pr-5 text-right"><Badge variant="outline">{!row.rankable ? 'restrição de calendário ou balanço' : !row.capitalFeasible ? 'fora do orçamento' : row.evidenceLevel === 'preflight-validated' ? 'pré-validado' : 'cabe no capital estimado'}</Badge></TableCell></TableRow>)}</TableBody></Table></div>
+              </Panel>
+              <details className="rounded-xl border bg-card p-4"><summary className="cursor-pointer text-sm font-semibold">Bases da comparação e limites do pasto</summary><div className="mt-4 space-y-4">
               <section className={`rounded-xl border p-4 text-sm ${localPasture.limited ? 'bg-[#fff8e9]' : 'bg-card'}`} aria-label="Capacidade de pasto aplicada">
                 <h2 className="font-semibold">Lotação desejada: {two.format(assumptions.stockingUa)} UA/ha · aplicada: {two.format(localPasture.effectiveUa)} UA/ha</h2>
                 <p className="mt-2">{localPasture.known
@@ -5168,43 +5199,9 @@ export default function Home() {
                 <strong>Mesma área, mesmo capital:</strong> o líder respeita o orçamento estimado; resultados fora do limite permanecem na tabela.
                 {budgetRanking.unconstrained && <span> Sem restrição de caixa, a maior margem é de {budgetRanking.unconstrained.label}: {brl0.format(budgetRanking.unconstrained.marginHa)}/ha total/ano.</span>}
                 <p className="mt-2">No ranking anual, A inclui pasto e silagem na área-base e compra milho ao preço entregue. A alocação avançada mostra, separadamente, a produção própria e sua área adicional. {assumptions.linkFeedToCropCosts ? '' : 'Dieta manual ativa: composição e origem não validadas.'}</p>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <Button variant="outline" onClick={loadProductionBase}>Usar base produtiva · 400 ha</Button>
-                  <button className="font-semibold underline" onClick={() => setActiveTab('audit')} type="button">Conferir premissas e caixa do primeiro ano →</button>
-                </div>
-                <p className="mt-2 text-sm">A base repõe área, pesos, lotação e ganhos de referência. Preserva seus preços, custos, data de entrada, orçamento e vagas de cocho. Não define uma meta de margem.</p>
+
               </div>
-              <Panel className="overflow-hidden">
-                <SectionTitle eyebrow="Maior valor modelado · cenário atual" title={allOperatingLosses ? 'Cenário de prejuízo · rever antes de investir' : budgetRanking.indifferent ? 'Alternativas próximas no orçamento · sem vencedor robusto' : `Maior margem dentro do capital estimado: ${best.label}`} text="Comparamos os sistemas pecuários com soja, milho, algodão e sucessão irrigada sob o mesmo orçamento. Mude uma alavanca por vez; receita, custo, margem e escala são recalculados imediatamente." action={<Badge className="bg-[#d7f06b] text-[#173724]">cenário atual</Badge>} />
-                <div className="grid gap-4 bg-[#113724] p-5 text-white lg:grid-cols-[1.2fr_1fr] lg:p-6">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/55">Leitura simples do cenário</p>
-                    <h2 className="mt-3 max-w-2xl font-heading text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{best.id === 'none-feasible' ? 'Nenhuma alternativa integral cabe no orçamento. As margens continuam visíveis; reduza a área ou consulte o mix parcial.' : allOperatingLosses ? 'Nenhuma alternativa dentro do orçamento apresenta margem operacional positiva. Compare a menor perda com custos inevitáveis de adiar a operação; não há aprovação de investimento.' : budgetRanking.indifferent ? 'As melhores alternativas estão dentro da faixa de indiferença informada. Compare risco, caixa e esforço operacional.' : best.id === 'cattle-a' ? 'A recria seguida de confinamento apresenta a maior margem anual nesta combinação.' : best.id === 'cattle-b' ? 'Fechar o ciclo no pivô, sem confinamento próprio, apresenta a maior margem anual nesta combinação.' : best.id === 'double-crop' ? 'A sucessão soja + milho apresenta a maior margem anual por hectare nesta combinação.' : `${best.label} apresenta a maior margem anual por hectare nesta combinação.`}</h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/65">Isso não significa que a alternativa já esteja pronta para investimento. Significa que, com estes preços, pesos, ganhos e custos, ela ocupa o primeiro lugar econômico. Os alertas de caixa, capacidade, mercado e dados continuam visíveis nas abas avançadas.</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem anual</p><p className="mt-2 font-mono text-xl font-bold text-[#d7f06b]">{moneyCompact(best.margin)}</p></div>
-                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem por hectare</p><p className="mt-2 font-mono text-xl font-bold">{brl0.format(best.marginHa)}</p></div>
-                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Diferença para o 2º</p><p className="mt-2 font-mono text-lg font-bold">{runnerUp ? `${brl0.format(best.marginHa - runnerUp.marginHa)}/ha` : 'n/d'}</p></div>
-                    <div className="rounded-xl bg-white/8 p-4"><p className="text-[10px] uppercase tracking-[0.12em] text-white/50">Margem / custo operacional</p><p className="mt-2 font-mono text-lg font-bold">{percentage(best.roi)}</p></div>
-                  </div>
-                </div>
-              </Panel>
-              <BusinessReview a={modelAssumptions} core={result} rearing={rearing} cash={rearingCash}
-                rearingCapital={comparisons.find(row => row.id === 'cattle-c')?.capitalRequired ?? 0}
-                budget={strategyCapitalLimit} gateSourceDate={animalTimelineInputs.gateSourceDate} rows={areaResponses}
-                controls={<>
-                  <Control label="Magro · valor líquido na porteira" value={animalTimelineInputs.gateValuePerKgLive} suffix="R$/kg vivo" min={0} max={40} step={0.1} onChange={value => updateAnimalTimeline('gateValuePerKgLive', value)} />
-                  <Control label="Novo investimento incremental · cocho" value={assumptions.investment} suffix="R$" min={0} max={100000000} step={100000} onChange={value => update('investment', value)} />
-                </>} />
-              <MarketCompass uf={marketUf} onUf={setMarketUf} asOf={asOfDate}
-                modeledPrices={{ cattle: assumptions.priceArroba, soy: crops.find(c => c.id === 'soy-irrigated')?.price ?? 0, corn: crops.find(c => c.id === 'corn-irrigated')?.price ?? 0, cotton: crops.find(c => c.id === 'cotton-irrigated')?.price ?? 0 }}
-                onApply={applyRadarPrice} onEvidence={setMarketEvidence}
-                decisionDate={animalTimeline.decisionDate}
-                exitDate={animalTimeline.routes.find(r => r.id === 'own-feedlot')?.exitDate ?? ''}
-                curvePrice={animalTimeline.routes.find(r => r.id === 'own-feedlot')?.projectedPrice ?? null}
-                curveCovered={animalTimeline.curveSourceValid && ['exact', 'interpolated'].includes(animalTimeline.routes.find(r => r.id === 'own-feedlot')?.curveCoverage ?? '')}
-                onAdvanced={() => setActiveTab('futures')} />
+              </div></details>
               <Panel>
                 <SectionTitle eyebrow="Alavancas do cenário atual" title="O que limita o resultado e o que testar"
                   text="A: recria no pivô + silagem + confinamento. B: ciclo até o peso final no pivô. A divisão da área é editável; o motor não usa 75/25 quando você informar outra proporção." />
@@ -5218,24 +5215,13 @@ export default function Home() {
                   <Metric label="Milho entregue: ponto em que A = B" value={capacityDiagnostics.cornIndifference === null ? 'sem empate não negativo' : `${brl2.format(capacityDiagnostics.cornIndifference)}/sc`}
                     note={assumptions.linkFeedToCropCosts ? 'Preço calculado de indiferença anual com as demais premissas constantes. A melhora com milho mais barato. Não é cotação nem preço-alvo de mercado.' : 'Dieta manual: o milho não altera o custo da ração. Ligue o custo local para calcular este ponto.'} tone="green" />
                 </div>
-                <div className="grid gap-4 border-t p-5 sm:grid-cols-2 lg:p-6">
-                  <Control label="Milho comprado · preço entregue" value={allocationInputs.grainPurchasePriceSack} suffix="R$/sc" min={0} max={500} step={1} onChange={value => updateAllocation('grainPurchasePriceSack', value)} />
-                  <Control label="Vagas nominais de confinamento" value={allocationInputs.feedlotCapacity} suffix="vagas" min={0} max={50000} step={50} onChange={value => updateAllocation('feedlotCapacity', value)} />
-                  <p className="text-sm text-muted-foreground sm:col-span-2">O milho CONAB é referência ao produtor. Para comprar ração, ajuste o preço entregue acima com frete, qualidade e prazo; aplicar a cotação de venda não muda esse custo silenciosamente. Milho próprio também tem área e alternativa de venda: <button className="font-semibold underline" type="button" onClick={() => setActiveTab('allocation')}>ver alocação e custo de oportunidade</button>.</p>
-                </div>
+                <div className="flex flex-wrap gap-3 border-t p-5"><Button variant="outline" onClick={() => openEditor('feed')}>Ajustar alimento e vagas</Button><Button variant="outline" onClick={() => openAnalysisTab('allocation')}>Ver produção própria e estoques</Button></div>
               </Panel>
-
-
-              <Panel>
-                <SectionTitle eyebrow="Só o necessário para comparar lavouras" title="Preço e produtividade" text="Os custos permanecem preenchidos pela base local e podem ser abertos depois. Aqui você altera apenas as duas variáveis que mais mudam a margem de cada cultura." />
-                <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3 lg:p-6">{crops.map((crop) => <div className="rounded-2xl border border-border/75 bg-[#fafbf8] p-4" key={`quick-${crop.id}`}><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold">{crop.shortName}</p><Badge variant="outline">irrigado pleno</Badge></div><div className="mt-4 grid gap-3"><Control label="Preço" value={crop.price} suffix={`R$/${crop.unit.split('/')[0]}`} min={0} max={crop.id === 'cotton-irrigated' ? 500 : 1000} step={0.5} onChange={(value) => updateCrop(crop.id, 'price', value)} /><Control label="Produtividade" value={crop.yield} suffix={crop.unit} min={0} max={crop.id === 'cotton-irrigated' ? 1000 : 500} step={1} onChange={(value) => updateCrop(crop.id, 'yield', value)} /></div></div>)}</div>
-              </Panel>
-
-              <Panel>
-                <SectionTitle eyebrow={`Comparação em tempo real · ${int.format(assumptions.totalArea)} ha`} title="O que acontece em cada alternativa" text="Todas usam a mesma área-base e as premissas atuais. O primeiro lugar é o maior valor modelado por hectare; a diferença negativa mostra quanto cada alternativa está atrás." />
-                <div className="overflow-x-auto"><Table><TableHeader><TableRow className="bg-[#f4f7f1]"><TableHead className="pl-5">Alternativa</TableHead><TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Custo</TableHead><TableHead className="text-right">Margem total</TableHead><TableHead className="text-right">Margem/ha</TableHead><TableHead className="text-right">Diferença para líder</TableHead><TableHead className="pr-5 text-right">Estado</TableHead></TableRow></TableHeader><TableBody>{ranking.map((row, index) => <TableRow className={row.id === best.id ? 'bg-[#f2f7da]/65' : ''} key={`quick-row-${row.id}`}><TableCell className="pl-5"><span className="font-semibold">{index + 1}. {row.label}</span><p className="mt-1 text-[9px] text-muted-foreground">{row.production}</p></TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.revenue)}</TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.cost)}</TableCell><TableCell className={`text-right font-mono text-xs font-semibold ${row.margin >= 0 ? 'text-[#2d6c45]' : 'text-[#9b4b2f]'}`}>{moneyCompact(row.margin)}</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(row.marginHa)}</TableCell><TableCell className="text-right font-mono text-xs">{row.id === best.id ? 'líder no orçamento' : `${brl0.format(row.marginHa - best.marginHa)}/ha`}</TableCell><TableCell className="pr-5 text-right"><Badge variant="outline">{!row.rankable ? 'restrição de calendário ou balanço' : !row.capitalFeasible ? 'fora do orçamento' : row.evidenceLevel === 'preflight-validated' ? 'pré-validado' : 'cabe no capital estimado'}</Badge></TableCell></TableRow>)}</TableBody></Table></div>
-              </Panel>
-
+              <div className="no-print grid gap-3 sm:grid-cols-2">
+                <Button variant="outline" onClick={() => openAnalysisTab('market')}>Consultar preços e tendências</Button>
+                <Button variant="outline" onClick={() => openAnalysisTab('viability')}>Ver capital e viabilidade do cocho</Button>
+              </div>
+              <details className="rounded-xl border bg-card p-4"><summary className="cursor-pointer text-sm font-semibold">Memória física e como interpretar</summary><div className="mt-4">
               <div className="grid gap-5 xl:grid-cols-2">
                 <Panel>
                   <SectionTitle eyebrow="Efeito físico das alavancas" title="O que o simulador recalculou" />
@@ -5253,12 +5239,30 @@ export default function Home() {
                   <div className="space-y-3 p-5 text-sm leading-relaxed text-muted-foreground lg:p-6"><p><strong className="text-foreground">1.</strong> Mude uma variável: por exemplo, peso de decisão, GMD do cocho, preço do boi ou produtividade da soja.</p><p><strong className="text-foreground">2.</strong> Observe se o líder muda, quanto a margem/ha se desloca e qual gargalo físico cresceu.</p><p><strong className="text-foreground">3.</strong> Quando uma alternativa permanecer líder em uma faixa razoável, abra <button className="font-semibold text-[#315a3e] underline" onClick={() => setActiveTab('decision')} type="button">Decisão</button> e <button className="font-semibold text-[#315a3e] underline" onClick={() => setActiveTab('operations')} type="button">Operação & caixa</button> para fechar preços, capacidades, estoque e capital.</p><div className="rounded-xl border border-[#e2c37e]/35 bg-[#fff8e9] p-3 text-xs text-[#735a2a]"><strong>Importante:</strong> mudar a data desloca calendário, estoque e contratos. Ela só muda o preço automaticamente quando existir uma curva de mercado aplicada; o simulador não inventa preço futuro apenas pela passagem do tempo.</div></div>
                 </Panel>
               </div>
+              </div></details>
+            </TabsContent>
+
+            <TabsContent value="market" className="space-y-5" keepMounted>
+              <MarketCompass uf={marketUf} onUf={setMarketUf} asOf={asOfDate}
+                modeledPrices={{ cattle: assumptions.priceArroba, soy: crops.find(c => c.id === 'soy-irrigated')?.price ?? 0, corn: crops.find(c => c.id === 'corn-irrigated')?.price ?? 0, cotton: crops.find(c => c.id === 'cotton-irrigated')?.price ?? 0 }}
+                onApply={applyRadarPrice} onEvidence={setMarketEvidence}
+                decisionDate={animalTimeline.decisionDate}
+                exitDate={animalTimeline.routes.find(r => r.id === 'own-feedlot')?.exitDate ?? ''}
+                curvePrice={animalTimeline.routes.find(r => r.id === 'own-feedlot')?.projectedPrice ?? null}
+                curveCovered={animalTimeline.curveSourceValid && ['exact', 'interpolated'].includes(animalTimeline.routes.find(r => r.id === 'own-feedlot')?.curveCoverage ?? '')}
+                onAdvanced={() => setActiveTab('futures')} />
+            </TabsContent>
+            <TabsContent value="viability" className="space-y-5">
+              <BusinessReview a={modelAssumptions} core={result} rearing={rearing} cash={rearingCash}
+                rearingCapital={comparisons.find(row => row.id === 'cattle-c')?.capitalRequired ?? 0}
+                budget={strategyCapitalLimit} gateSourceDate={animalTimelineInputs.gateSourceDate} rows={areaResponses}
+                controls={<Button variant="outline" onClick={() => openEditor('cattle')}>Ajustar preços e desempenho</Button>} />
             </TabsContent>
 
             <TabsContent value="audit" className="space-y-5">
               <DecisionReview assumptions={modelAssumptions} anchor={animalTimelineInputs.entryDate} config={reviewInputs} onConfig={(next) => { setReviewInputs(next); invalidateOperationalConfirmations(); }}
                 operations={operationalInputs} onOperation={(key, value) => { setOperationalInputs((current) => ({ ...current, [key]: value })); invalidateOperationalConfirmations(); }}
-                budget={strategyCapitalLimit} onBudget={setStrategyCapitalLimit} exportScenario={serializedScenario} restoreScenario={restoreScenario}
+                budget={strategyCapitalLimit} onEditBudget={() => openEditor('farm', 'Capital disponível')} exportScenario={serializedScenario} restoreScenario={restoreScenario}
                 onResetReference={loadProductionBase} />
             </TabsContent>
 
@@ -5535,12 +5539,12 @@ export default function Home() {
                 />
                 <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <div className="rounded-2xl border border-[#bfd0bd] bg-[#eef5ef] p-4"><span className="text-[11px] font-medium text-muted-foreground">Calendário comum automático</span><p className="mt-2 font-mono text-sm font-semibold">{dateBr(automaticCalendar.anchorDate)} → {dateBr(automaticCalendar.horizonEndDate)}</p><p className="mt-1 text-[9px] text-muted-foreground">Altere a entrada no painel lateral.</p></div>
-                  <Control label="Peso de entrada" value={animalTimelineInputs.entryArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={(value) => updateAnimalTimeline('entryArrobas', value)} />
-                  <Control label="Peso da decisão" value={animalTimelineInputs.decisionArrobas} suffix="@/cab" min={1} max={40} step={0.1} onChange={(value) => updateAnimalTimeline('decisionArrobas', value)} />
+                  <EditValue label="Peso de entrada" value={two.format(animalTimelineInputs.entryArrobas) + ' @/cab'} onEdit={() => openEditor('cattle', 'Peso de entrada')} />
+                  <EditValue label="Peso da decisão" value={two.format(animalTimelineInputs.decisionArrobas) + ' @/cab'} onEdit={() => openEditor('cattle', 'Peso da decisão')} />
                   <Control label="Preço manual de entrada" value={animalTimelineInputs.entryValuePerKgLive} suffix="R$/kg vivo" min={0} max={40} step={0.1} onChange={(value) => updateAnimalTimeline('entryValuePerKgLive', value)} />
                   <label className="rounded-2xl border border-border/80 p-4" htmlFor="animal-entry-quote-date"><span className="text-[11px] font-medium text-muted-foreground">Data-base do preço de entrada</span><Input id="animal-entry-quote-date" className="mt-2 h-9 text-xs" type="date" value={animalTimelineInputs.entryQuoteDate} onChange={(event) => updateAnimalTimeline('entryQuoteDate', event.target.value)} /></label>
                   <label className="rounded-2xl border border-border/80 p-4" htmlFor="animal-entry-quote-source"><span className="text-[11px] font-medium text-muted-foreground">Fonte da entrada manual</span><Input id="animal-entry-quote-source" className="mt-2 h-9 text-xs" placeholder="praça, fornecedor ou boletim" value={animalTimelineInputs.entryQuoteSource} onChange={(event) => updateAnimalTimeline('entryQuoteSource', event.target.value)} /></label>
-                  <Control label="Magro · valor líquido após despesas de venda" value={animalTimelineInputs.gateValuePerKgLive} suffix="R$/kg vivo" min={0} max={40} step={0.1} onChange={(value) => updateAnimalTimeline('gateValuePerKgLive', value)} />
+                  <EditValue label="Magro · valor líquido após despesas de venda" value={brl2.format(animalTimelineInputs.gateValuePerKgLive) + '/kg vivo'} onEdit={() => openEditor('cattle', 'Magro · valor líquido na porteira')} />
                   <label className="rounded-2xl border border-border/80 p-4" htmlFor="animal-gate-valuation-date"><span className="text-[11px] font-medium text-muted-foreground">Data-alvo do preço do magro</span><Input id="animal-gate-valuation-date" className="mt-2 h-9 text-xs" type="date" value={animalTimelineInputs.gateValuationDate} onChange={(event) => updateAnimalTimeline('gateValuationDate', event.target.value)} /></label>
                   <label className="rounded-2xl border border-border/80 p-4" htmlFor="animal-gate-source-date"><span className="text-[11px] font-medium text-muted-foreground">Data-base do preço-cenário</span><Input id="animal-gate-source-date" className="mt-2 h-9 text-xs" type="date" value={animalTimelineInputs.gateSourceDate} onChange={(event) => updateAnimalTimeline('gateSourceDate', event.target.value)} /></label>
                   <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3 md:col-span-2"><div><p className="text-xs font-semibold">@ vivo-equivalente = 30 kg</p><p className="text-[10px] text-muted-foreground">Ligado: 7 @ = 210 kg vivos. Desligado: @ de carcaça = 15 kg ÷ rendimento.</p></div><Switch aria-label="Usar arroba vivo-equivalente" checked={animalTimelineInputs.liveEquivalent} onCheckedChange={(checked) => updateAnimalTimeline('liveEquivalent', checked)} /></div>
@@ -5670,7 +5674,7 @@ export default function Home() {
                 <SectionTitle eyebrow="Lote a lote" title="Vender agora ou ocupar o cocho próprio" text="Cada faixa compara o mesmo animal no dia da decisão. O histórico da recria contextualiza o lote, mas a destinação usa a margem futura do cocho, o consumo, a conversão, alimento, caixa, vagas físicas e vaga-dias — não apenas o GMD passado." />
                 <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <Metric label="Venda do boi magro na decisão" value={brl0.format(animalTimeline.gateValueHead)} note={`${int.format(timelineDecisionWeight)} kg × ${brl2.format(animalTimelineInputs.gateValuePerKgLive)}/kg · mesma base do lote datado`} />
-                  <Control label="Capacidade física do cocho" value={allocationInputs.feedlotCapacity} suffix="vagas" min={0} max={100000} step={50} onChange={(value) => updateAllocation('feedlotCapacity', value)} />
+                  <EditValue label="Capacidade física do cocho" value={int.format(allocationInputs.feedlotCapacity) + ' vagas'} onEdit={() => openEditor('feed', 'Vagas nominais de confinamento')} />
                   <Control label="Utilização operacional" value={allocationInputs.feedlotUtilization} suffix="%" min={10} max={100} step={1} onChange={(value) => updateAllocation('feedlotUtilization', value)} />
                   <Control label="Operação própria" value={allocationInputs.ownOperationDay} suffix="R$/cab/d" min={0} max={30} step={0.05} onChange={(value) => updateAllocation('ownOperationDay', value)} />
                   <Control label="Custo fixo próprio" value={allocationInputs.ownFixedCostHead} suffix="R$/cab" min={0} max={2000} step={5} onChange={(value) => updateAllocation('ownFixedCostHead', value)} />
@@ -5720,7 +5724,7 @@ export default function Home() {
                 <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <Control label="Área de milho-grão" value={allocationInputs.grainAreaHa} suffix="ha a montante" min={0} max={10000} step={10} onChange={(value) => updateAllocation('grainAreaHa', value)} />
                   <Control label="Valor alternativo da silagem" value={allocationInputs.silageOpportunityCostDm} suffix="R$/kg MS" min={0} max={5} step={0.01} onChange={(value) => updateAllocation('silageOpportunityCostDm', value)} />
-                  <Control label="Milho comprado entregue" value={allocationInputs.grainPurchasePriceSack} suffix="R$/sc 60 kg" min={0} max={500} step={0.5} onChange={(value) => updateAllocation('grainPurchasePriceSack', value)} />
+                  <EditValue label="Milho comprado entregue" value={brl2.format(allocationInputs.grainPurchasePriceSack) + '/sc 60 kg'} onEdit={() => openEditor('feed', 'Milho comprado · preço entregue')} />
                   <Control label="Silagem comprada entregue" value={allocationInputs.purchasedSilageCostDm} suffix="R$/kg MS" min={0} max={5} step={0.01} onChange={(value) => updateAllocation('purchasedSilageCostDm', value)} />
                   <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3 md:col-span-2"><div><p className="text-xs font-semibold">Permitir compra externa de alimento</p><p className="text-[10px] text-muted-foreground">Ligado: o cocho pode comprar o déficit; desligado: milho e silagem próprios limitam a escala</p></div><Switch aria-label="Permitir compra externa de alimento" checked={allocationInputs.allowPurchasedFeed} onCheckedChange={(checked) => updateAllocation('allowPurchasedFeed', checked)} /></div>
                 </div>
@@ -5871,8 +5875,10 @@ export default function Home() {
                       <div className="rounded-2xl border border-border/75 p-4" key={crop.id}>
                         <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{crop.name}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{crop.farm} · {crop.season}</p></div><Badge variant="outline">{brl0.format(calc.marginHa)}/ha</Badge></div>
                         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                          {([['yield', 'Produtividade', crop.yield], ['price', 'Preço unitário', crop.price], ['deductionRate', 'Deduções %', crop.deductionRate], ['fixedCostHa', 'Fixos R$/ha/safra', cropFixedCostHa(crop)]] as const).map(([key, label, value]) => (
-                            <label key={key}><span className="mb-1 block text-[9px] uppercase tracking-[0.08em] text-muted-foreground">{label}</span><NumericInput className="h-8 font-mono text-xs" min={0} step={key === 'yield' ? 1 : 0.01} value={Number(value.toFixed(2))} onValueChange={(numericValue) => updateCrop(crop.id, key, numericValue || 0)} /></label>
+                          <EditValue label="Produtividade" value={two.format(crop.yield) + ' ' + crop.unit} onEdit={() => openEditor('crops', 'Produtividade · ' + crop.shortName)} />
+                          <EditValue label="Preço de venda" value={brl2.format(crop.price) + '/' + crop.unit.split('/')[0]} onEdit={() => openEditor('crops', 'Preço de venda · ' + crop.shortName)} />
+                          {([['deductionRate', 'Deduções %', crop.deductionRate], ['fixedCostHa', 'Fixos R$/ha/safra', cropFixedCostHa(crop)]] as const).map(([key, label, value]) => (
+                            <label key={key}><span className="mb-1 block text-[9px] uppercase tracking-[0.08em] text-muted-foreground">{label}</span><NumericInput className="h-8 font-mono text-xs" min={0} step={0.01} value={Number(value.toFixed(2))} onValueChange={(numericValue) => updateCrop(crop.id, key, numericValue || 0)} /></label>
                           ))}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground"><span>Custo direto: <strong className="font-mono text-foreground">{brl2.format(calc.directCostHa)}/ha</strong></span><span>Arrendamento: <strong className="font-mono text-foreground">{brl2.format(assumptions.landLeaseHa)}/ha</strong></span><span>Equilíbrio: <strong className="font-mono text-foreground">{calc.breakEvenPrice ? brl2.format(calc.breakEvenPrice) : 'n/d'}</strong></span></div>
@@ -6132,7 +6138,7 @@ export default function Home() {
                 <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <label className="rounded-2xl border border-border/80 p-4" htmlFor="strategy-criterion"><span className="text-[11px] font-medium text-muted-foreground">Critério de decisão</span><select className="mt-2 h-9 w-full rounded-lg border border-input bg-white px-3 text-xs" id="strategy-criterion" value={strategyCriterion} onChange={(event) => setStrategyCriterion(event.target.value as DecisionCriterion)}><option value="defensive">Proteger o pior cenário</option><option value="base">Maximizar cenário central</option><option value="balanced">Balanceado 25/50/25</option></select><span className="mt-2 block text-[9px] leading-relaxed text-muted-foreground">25/50/25 são pesos de decisão, não probabilidades.</span></label>
                   <Control label="Máximo por sistema" value={strategyMaxShare} suffix="% área" min={10} max={100} step={5} onChange={setStrategyMaxShare} />
-                  <Control label="Capital anual disponível" value={strategyCapitalLimit} suffix="R$" min={0} max={500000000} step={1000000} onChange={updateStrategyCapitalLimit} />
+                  <EditValue label="Capital disponível para o projeto" value={brl0.format(strategyCapitalLimit)} onEdit={() => openEditor('farm', 'Capital disponível')} />
                   <Control label="Erro/indiferença manual" value={strategyErrorHa} suffix="R$/ha" min={0} max={50000} step={500} onChange={setStrategyErrorHa} />
                 </div>
                 <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 xl:grid-cols-4 lg:px-6 lg:pb-6">
@@ -6281,8 +6287,8 @@ export default function Home() {
       <nav className="mobile-app-nav no-print" aria-label="Navegação principal do simulador">
         {mobileControlsOpen ? <p className="mobile-live-margin">Margem modelada: <strong>{best.id === 'none-feasible' ? 'n/d' : moneyCompact(best.margin)}</strong> / ano · {int.format(assumptions.totalArea)} ha</p> : null}
         <div className="grid grid-cols-4">
-          <button type="button" aria-expanded={mobileControlsOpen} aria-controls="quick-controls" onClick={() => { setMobileControlsOpen(true); window.setTimeout(() => { document.getElementById('quick-controls-title')?.focus(); document.getElementById('quick-controls')?.scrollIntoView(); }, 0); }}><SlidersHorizontal aria-hidden="true" />Ajustar</button>
-          {([['quick', 'Simular', Gauge], ['decision', 'Decisão', Beef], ['report', 'Relatório', FileText]] as const).map(([tab, label, Icon]) => <button type="button" key={tab} aria-current={!mobileControlsOpen && activeTab === tab ? 'page' : undefined} onClick={() => { setMobileControlsOpen(false); openAnalysisTab(tab); document.getElementById('analysis-tabs')?.focus({ preventScroll: true }); }}><Icon aria-hidden="true" />{label}</button>)}
+          <button type="button" aria-expanded={mobileControlsOpen} aria-controls="quick-controls" onClick={() => openEditor(editorGroup ?? 'farm')}><SlidersHorizontal aria-hidden="true" />Cenário</button>
+          {([['quick', 'Resultado', Gauge], ['market', 'Mercado', TrendingUp], ['report', 'Relatório', FileText]] as const).map(([tab, label, Icon]) => <button type="button" key={tab} aria-current={!mobileControlsOpen && activeTab === tab ? 'page' : undefined} onClick={() => { setMobileControlsOpen(false); openAnalysisTab(tab); document.getElementById('analysis-tabs')?.focus({ preventScroll: true }); }}><Icon aria-hidden="true" />{label}</button>)}
         </div>
       </nav>
     </main>

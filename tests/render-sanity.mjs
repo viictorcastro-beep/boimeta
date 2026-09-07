@@ -28,12 +28,14 @@ try {
   assert.deepEqual(events, ['cancel'], 'touch não chega ao modelo');
   const html = renderToString(React.createElement(Page));
   assert.match(html, /BoiMeta/);
-  assert.match(html, /Premissas &amp; caixa/);
+  assert.match(html, /Validações/);
+  assert.match(html, /Seu cenário/);
+  for (const group of ['Fazenda e capital', 'Gado e desempenho', 'Alimentação e cocho', 'Lavouras irrigadas', 'Investimentos e extras']) assert.match(html, new RegExp(group));
   assert.match(html, /O mercado está ajudando ou pressionando/);
   assert.match(html, /Usar base produtiva/);
-  assert.match(html, /Recriar, terminar ou investir no cocho/);
+  assert.match(html, /Ver capital e viabilidade do cocho/);
   assert.match(html, /Pecuária C/);
-  assert.match(html, /sem prêmio embutido/);
+  assert.match(html, /sem prêmio de exportação automático/);
   assert.match(html, /value="30\.000\.000"/);
   assert.match(html, /GMD recria · A\/C/);
   assert.match(html, /GMD ciclo no pivô · B/);
@@ -41,6 +43,24 @@ try {
   assert.match(html, /aria-label="Diminuir Capital disponível"/);
   assert.match(html.replace(/<!--.*?-->/g, ''), /100\.000 R\$/);
   assert.match(html, /parameter-stepper/);
+  // Cada premissa básica deve ter só um editor; os estudos apontam para ele.
+  for (const label of ['Área total', 'Capital disponível', 'Peso de entrada', 'Peso da decisão', 'Peso de saída', 'Magro · valor líquido na porteira', 'Investimento incremental', 'Vagas nominais de confinamento', 'Milho comprado · preço entregue']) {
+    assert.equal(html.split(`data-field-label="${label}"`).length - 1, 1, `editor único: ${label}`);
+  }
+  assert.ok(/id="editor-farm"[^>]*aria-expanded="true"|aria-expanded="true"[^>]*id="editor-farm"/.test(html), 'fazenda inicia aberta');
+  for (const id of ['cattle', 'feed', 'crops', 'investment']) {
+    assert.ok(new RegExp(`id="editor-${id}"[^>]*aria-expanded="false"|aria-expanded="false"[^>]*id="editor-${id}"`).test(html), `${id} inicia recolhido`);
+  }
+  assert.match(html, /Ver o que precisa ser validado/);
+  assert.match(html, /não são lucro líquido nem caixa do primeiro ano/);
+  const { ScenarioEditor } = await server.ssrLoadModule('../components/scenario-editor.tsx');
+  const navigation = [];
+  const editor = ScenarioEditor({ groups: [], openGroup: 'farm', onGroup: id => navigation.push(id), onCompare: () => navigation.push('compare'), margin: 'R$ 1', footer: null });
+  const accordion = editor.props.children[1];
+  assert.equal(accordion.props.keepMounted, true, 'recolher preserva os campos e rascunhos montados');
+  accordion.props.onValueChange(['cattle']);
+  accordion.props.onValueChange([]);
+  assert.deepEqual(navigation, ['cattle', null], 'navegar/recolher não escreve uma premissa financeira');
   assert.doesNotMatch(html, /A vence pelo giro e pela janela complementar/);
   // Base UI inclui scripts de hidratação com Number.isNaN; não são resultados.
   const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -72,7 +92,7 @@ try {
         silageCutIntervalDays: 180,
       },
       budget: 6000000,
-      onBudget() {},
+      onEditBudget() {},
       onConfig() {},
       onOperation() {},
       exportScenario() {

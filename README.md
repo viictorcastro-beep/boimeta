@@ -6,17 +6,19 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 ## Experiência de aplicativo
 
-- Layout adaptável a celular, tablet e computador; no celular, a barra inferior alterna ajustes, simulação, decisão e relatório.
-- Toque em **Ajustar** para abrir os parâmetros. A margem anual fica visível enquanto você altera valores.
+- Layout adaptável a celular, tablet e computador; no celular, a barra inferior alterna **Cenário, Resultado, Mercado e Relatório**.
+- **Seu cenário** concentra as entradas básicas em cinco grupos. Só **Fazenda e capital** começa aberto, com área, capital e data. Cada grupo recolhido resume as premissas usadas.
+- Os grupos restantes são **Gado e desempenho**, **Alimentação e cocho**, **Lavouras irrigadas** e **Investimentos e extras**. Pesos, custos e hipóteses opcionais ficam em detalhes; não é necessário preencher tudo para estudar a base.
+- A margem é recalculada ao editar. No celular, use **+ / −** ou digitação; deslizar para rolar a página não deve alterar valores. Os atalhos **Editar no cenário** levam ao campo original, sem manter editores duplicados nos estudos.
 - Use **Usar como aplicativo** para instruções de instalação. Chrome/Edge podem oferecer instalação; no iPhone, use Safari → Compartilhar → Adicionar à Tela de Início. A disponibilidade depende do navegador/sistema.
 - Após a primeira carga completa, o aplicativo e as referências datadas ficam disponíveis offline. Preços não se atualizam sem conexão; as datas originais são preservadas.
 - Uma nova versão avisa antes de recarregar. **Salve o cenário antes de atualizar.** O armazenamento é local ao navegador, sem sincronização automática entre dispositivos.
 - As tabelas extensas têm rolagem própria; zoom, teclado e redução de movimento permanecem disponíveis.
-- Navegação e edição foram testadas em navegador com larguras estreitas, intermediárias e amplas. Isso não equivale a certificação em todos os hardwares ou teste em celulares físicos.
+- Versões anteriores tiveram navegação e edição verificadas em navegador com larguras estreitas, intermediárias e amplas. A reorganização 2026-09-07.3 foi verificada por testes de código, renderização React e build; nesta rodada não houve nova inspeção visual/gestual em navegador ou aparelho físico.
 
 ## Como utilizar
 
-1. Ajuste área, preço de compra/venda, pesos e GMD na tela inicial.
+1. Em **Seu cenário**, comece por área e capital. Confira a data-base e só abra os outros grupos se quiser alterar suas premissas.
    A base produtiva de 400 ha é editável; não é uma meta de margem. O radar busca referências datadas sem sobrescrever seu estudo.
 2. Compare margem anual, margem por hectare e margem sobre custo operacional. Esta última **não é ROI sobre patrimônio nem lucro líquido**.
 3. Confira o alimento produzido e consumido, a área adicional do milho, os lotes, a capacidade e o caixa.
@@ -25,18 +27,18 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 6. Use **Salvar no navegador** e **Restaurar salvo** para guardar um cenário no dispositivo. Não há salvamento automático: salve novamente depois das alterações.
 7. **Baixar cenário** e **Abrir cenário** compartilham premissas em JSON versionado. Confirmações operacionais são renovadas ao importar.
 8. A aba de relatório exporta CSV e permite impressão. O JSON restaura o cenário; o CSV documenta resultados.
-9. Abra **Premissas & caixa** para conferir primeiro ano, reserva/implantação e requisitos físicos. A reconciliação histórica permanece recolhida, não como meta de margem.
-10. Em **Premissas & caixa → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
-11. A tela rápida destaca a maior margem entre alternativas que cabem no capital estimado. **Estratégia** calcula um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
+9. Abra **Validações** para conferir primeiro ano, reserva/implantação e requisitos físicos. A reconciliação histórica permanece recolhida, não como meta de margem.
+10. Em **Validações → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
+11. **Resultado** destaca a maior margem entre alternativas que cabem no capital estimado. Em **Estudos detalhados → Ciclo & mix**, calcule um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
 12. Compare **A: recria + cocho**, **B: ciclo no pivô** e **C: recria e venda do magro**. Informe o preço líquido local do magro; não é a cotação da arroba de boi gordo. O GMD de recria A/C e o do ciclo B têm controles separados.
 13. Valores usam português brasileiro: `30.000.000`, `1.234,56`, `0,78`. É possível colar `R$ 1.234,56`. Um campo vazio não zera silenciosamente a premissa; use vírgula decimal, Enter para concluir ou as setas para incrementar.
-14. Em **Premissas & caixa → Alimentos, pasto e água**, informe produção de MS e aproveitamento. Esses dados limitam A/B/C; a distribuição mensal limita o fluxo contínuo pelo mês mais restritivo. Não há carregamento automático de sobra de capim entre meses.
+14. Em **Validações → Alimentos, pasto e água**, informe produção de MS e aproveitamento. Esses dados limitam A/B/C; a distribuição mensal limita o fluxo contínuo pelo mês mais restritivo. Não há carregamento automático de sobra de capim entre meses.
 15. O capital A/B cobre a esteira até a primeira venda e a reserva de custeio do ciclo. O mix separa essa reserva do custo anual usado para calcular margem; adiar a entrada não faz despesas futuras desaparecerem.
 
 ## O que os números representam
 
 - A tela rápida é uma comparação nominal de **ano em regime pleno**, não um orçamento de implantação nem garantia de retorno.
-- A margem/ha usa a área-base total, incluindo silagem. Na comparação rápida, A usa silagem própria e milho comprado; o preço entregue do milho fica na alocação. Hectares de milho próprio adicional e sua oportunidade de venda são identificados na integração avançada.
+- A margem/ha usa a área-base total, incluindo silagem. Na comparação rápida, A usa silagem própria e milho comprado; o preço entregue fica em **Seu cenário → Alimentação e cocho**. O preço de venda do milho fica em **Lavouras irrigadas**. Hectares de milho próprio adicional e sua oportunidade de venda são identificados na integração avançada.
 - A análise datada e o alocador têm critérios próprios de mercado, disponibilidade, capacidade e oportunidade do alimento.
 - A dieta manual funciona na comparação rápida e na projeção individual. A alocação integrada de alimento próprio usa custos por ingrediente e custo de oportunidade; não recebe selo de validação sob dieta manual.
 - A oferta anual de alimento não prova disponibilidade no dia de uso. Compras adicionais antes da safra são mostradas e impedem a validação operacional até conciliação econômica.
@@ -56,6 +58,8 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 Registro da rodada: [auditoria de prioridades · 2026-09-07.1](docs/PRIORIDADES_2026-09-07.1.md).
 
+Reorganização do preenchimento: [guia e auditoria · 2026-09-07.3](docs/PREENCHIMENTO_2026-09-07.3.md).
+
 Requer Node 22.13+ e pnpm. Dependências travadas em pnpm-lock.yaml.
 
 ```sh
@@ -65,6 +69,7 @@ pnpm test:regression
 pnpm test:decision
 pnpm test:market
 pnpm test:business
+pnpm test:controls
 pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit

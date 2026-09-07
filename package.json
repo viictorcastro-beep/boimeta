@@ -9,7 +9,7 @@
     "dev": "vite --config vite.pages.config.ts",
     "build": "vite build --config vite.pages.config.ts",
     "start": "vite preview --config vite.pages.config.ts",
-    "lint": "oxlint app/page.tsx app/api lib tests components/app-install.tsx components/decision-review.tsx components/market-compass.tsx components/business-review.tsx components/market-news.tsx components/numeric-input.tsx components/parameter-adjustment.tsx pages/main.tsx scripts/pwa-build.ts",
+    "lint": "oxlint app/page.tsx app/api lib tests components/app-install.tsx components/decision-review.tsx components/market-compass.tsx components/business-review.tsx components/market-news.tsx components/numeric-input.tsx components/parameter-adjustment.tsx components/scenario-editor.tsx pages/main.tsx scripts/pwa-build.ts",
     "format": "oxfmt",
     "test:model": "node --experimental-strip-types tests/model-sanity.mjs",
     "test:decision": "node --experimental-strip-types tests/decision-audit.mjs",
