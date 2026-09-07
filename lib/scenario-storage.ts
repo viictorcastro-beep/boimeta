@@ -12,7 +12,7 @@ export function validateScenario<T>(document: unknown, template: T): T {
   if (!document || typeof document !== 'object' ||
     (document as { schema?: number }).schema !== SCENARIO_SCHEMA) throw new Error('Versão de cenário incompatível.');
   const model = (document as { model?: unknown }).model;
-  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3', '2026-09-07.4', '2026-09-07.5', '2026-09-07.6', '2026-09-07.7'].includes(model)))
+  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3', '2026-09-07.4', '2026-09-07.5', '2026-09-07.6', '2026-09-07.7', '2026-09-07.8'].includes(model)))
     throw new Error('Versão de cálculo não suportada. Preserve o arquivo e importe com a versão correspondente.');
   const walk = (value: unknown, base: unknown, key = ''): unknown => {
     if (typeof base === 'number') {

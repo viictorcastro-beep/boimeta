@@ -41,6 +41,8 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 Em **Resultado → O que muda a decisão**, use **Mesmo capital** para comparar escalas parciais, **Alavancas de margem** para testar uma mudança por vez e **Lotação e área** para separar UA/ha de pasto da média da fazenda. O quadro geral continua comparando a área inteira. A diferença entre esses escopos pode mudar a primeira colocação.
 
+Em **Resultado → Com o mesmo gasto, qual deixa mais margem?**, o custo caixa anual de B é a referência: a área de A é calculada para igualar esse custeio, mesmo que diferente da área informada. Receita, margem, pasto/silagem, dias por animal e reserva operacional aparecem separadamente. O cocho não cresce sozinho: se saturar, mostra a escala produtiva limitada e o orçamento não utilizado. Não custa hectares ociosos apenas para forçar igualdade. São projetos alternativos, não um mix; CAPEX e terra devem ser orçados para cada escala. O estudo está no relatório e no CSV, sem alterar seu cenário.
+
 O estudo opcional de encerramento mantém custos e alimentação depois de 365 dias, sem tratar estoque animal como venda. Seu equivalente anual não é o resultado da operação estabilizada. [Correção da leitura ciclo/ano e contraprova do caso](docs/CICLO_E_ANO_2026-09-07.6.md). A memória anual com quantidade × custo unitário continua em Resultado e Relatório; o CSV padrão usa essa mesma base, sem misturar a campanha opcional.
 
 A rota A mostra a melhor proporção pasto/silagem testada e os preços de empate com B/C, sem prometer preço futuro ou retorno ao investimento. A inversa calcula a área equivalente de custeio agrícola, mas só atribui margem à área disponível. Informe custos adicionais de intensificação; aumentar UA sozinho não cria capim, energia ou desempenho. O relatório CSV contém os estudos e suas limitações. Veja a [auditoria numérica e prioridades](DECISAO_CAPITAL_2026-09-07.4.md).
@@ -64,7 +66,9 @@ A rota A mostra a melhor proporção pasto/silagem testada e os preços de empat
 
 ## Desenvolvimento
 
-Base inicial e receitas das vacas: [parâmetros das fotos · 2026-09-07.7](docs/BASE_FOTOS_2026-09-07.7.md). O botão **Base das fotos · 400 ha** carrega preços históricos e dieta manual; mantém o capital informado e não altera o cenário salvo no navegador. Valores ausentes das fotos são identificados como hipóteses complementares, não como reprodução exata da planilha original.
+Escopo vigente: [operação sem vacas · 2026-09-07.8](docs/SEM_VACAS_2026-09-07.8.md). Inicialização, restauração e importação não incluem o lote de vacas de oportunidade. A receita, o custo, a margem e a necessidade de capital desse lote deixam de entrar; não há crédito fictício nem aumento do orçamento. A migração é avisada e não altera o arquivo original. O módulo independente de cria e as fontes históricas são preservados.
+
+Fonte histórica: [parâmetros das fotos · 2026-09-07.7](docs/BASE_FOTOS_2026-09-07.7.md). O botão **Usar parâmetros das fotos · 400 ha** carrega preços históricos e dieta manual, agora sem vacas; mantém o capital informado e não altera o cenário salvo no navegador. Valores ausentes das fotos são identificados como hipóteses complementares, não como reprodução exata da planilha original.
 
 Registro da rodada: [auditoria de prioridades · 2026-09-07.1](docs/PRIORIDADES_2026-09-07.1.md).
 

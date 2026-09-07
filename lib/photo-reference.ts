@@ -1,5 +1,10 @@
 import { defaultAssumptions, type Assumptions } from './livestock-model.ts';
 
+/** Escopo da operação ativa. Preserva a fonte/arquivo histórico e não cria crédito. */
+export function withoutOpportunityCows(a: Assumptions): Assumptions {
+  return { ...a, includeCows: false };
+}
+
 /** Transcrição não é calibração de resultados. Lacunas permanecem hipóteses. */
 export function photoReferenceAssumptions(): Assumptions {
   return { ...defaultAssumptions, totalArea: 400, silageShare: 25,
@@ -7,7 +12,7 @@ export function photoReferenceAssumptions(): Assumptions {
     gmdPivotA: 0.9, gmdFeedlot: 1.48, gmdB: 1,
     priceArroba: 349.5, calfCost: 3288.09, supplementPrice: 5.08,
     dietPriceDm: 1.1239, dietDmDay: 11.14, linkFeedToCropCosts: false,
-    includeCows: true, cowBuyCost: 3673.33, cowSaleArroba: 300,
+    includeCows: false, cowBuyCost: 3673.33, cowSaleArroba: 300,
     cowCostBasis: 'reported-per-sold', includeEffluentSavings: false,
     effluentArea: 50, effluentDepthMm: 150, investment: 10859939,
     discountRate: 12, horizon: 10,
@@ -23,9 +28,7 @@ export const photoParameterNotes = [
   ['Bezerro / boi gordo', 'R$ 3.288,09/cab / R$ 349,50/@', 'Fotos', 'Referência histórica; data da cotação e praça não comprovadas. Não é preço de hoje.'],
   ['Dieta do cocho', '11,14 kg MS/dia × R$ 1,1239/kg MS', 'Foto', 'Dieta manual: milho local não substitui o preço ao carregar esta base.'],
   ['Suplemento', 'R$ 5,08/kg; A 28,4 kg; B 105,3 kg no período-base', 'Fotos', 'O consumo é ajustado pela duração calculada da fase.'],
-  ['Vacas: custo / receita líquida', 'R$ 4.382,82 / R$ 5.034,69 por vendida', 'Foto / derivação', 'Receita = custo caixa informado + margem caixa informada de R$ 651,87.'],
-  ['Vacas: quantidade', '798 vendidas por 100 ha de janela pós-silagem', 'Resumo / escala', 'Escala proporcional da referência, não comprovação de janela ou de capacidade de campo.'],
-  ['Índice de venda da vaca', '300 na base', 'Convenção de escala', 'Índice em R$/@: receita líquida = R$ 5.034,69 × índice/300. Peso, rendimento e deduções da vaca não estão reconciliados.'],
+  ['Escopo da operação', 'Somente bois; sem lote de vacas pós-silagem', 'Escolha do projeto', 'Receita, custo, margem e necessidade de capital desse lote são excluídos. Dinheiro não comprometido não é receita nem crédito adicional.'],
   ['Lotação média', '7,8 UA/ha de pasto', 'Hipótese complementar', 'Parâmetro preexistente do motor, não comprovado nestas fotos. A área de silagem não reduz a UA/ha digitada.'],
   ['Rendimento / deduções', '54% no pasto; +2 p.p. no cocho; 4% de deduções', 'Hipóteses complementares', 'Não confundir com premissas integralmente documentadas pela apresentação.'],
   ['Perdas e cocho', '0,2% em cada fase; 2.000 vagas × 90%', 'Hipóteses complementares', 'Limites explícitos do cálculo operacional dos bois. Não há vagas ilimitadas.'],

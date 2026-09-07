@@ -10,7 +10,7 @@ import {
 } from './operational-model.ts';
 import { MONTH_DAYS } from './pasture-capacity.ts';
 
-export const REVIEW_VERSION = '2026-09-07.7';
+export const REVIEW_VERSION = '2026-09-07.8';
 export const reviewDefaults = {
   pastureYieldDmTonnesHa: 0,
   grazingEfficiencyPercent: 0,

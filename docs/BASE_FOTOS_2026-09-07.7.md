@@ -1,5 +1,7 @@
 # Base das fotos e contabilização das vacas — 2026-09-07.7
 
+Registro histórico desta rodada. O lote de vacas foi posteriormente retirado da operação ativa na [versão 2026-09-07.8](SEM_VACAS_2026-09-07.8.md); seus totais abaixo não são os resultados vigentes.
+
 ## Escopo
 
 Pedido: carregar os parâmetros das fotografias da apresentação e contabilizar a atividade adicional de vacas. Não fabricar receita para reconciliar slides incompatíveis. Não alterar cenários salvos automaticamente. A base inicial da página e o botão de referência agora usam a mesma configuração; a base legada do motor permanece preservada para regressões e arquivos anteriores.

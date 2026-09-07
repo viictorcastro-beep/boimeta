@@ -8,6 +8,8 @@ import { BusinessReview } from '@/components/business-review';
 import { DecisionLab } from '@/components/decision-lab';
 import { ClosedCampaignPanel } from '@/components/closed-campaign';
 import { ProductionCyclePanel } from '@/components/production-cycle';
+import { EqualCattleCostPanel } from '@/components/equal-cattle-cost';
+import { equalCattleCost } from '@/lib/equal-cattle-cost';
 import { productionCycles } from '@/lib/production-cycle';
 import { closeCampaign, type CampaignInput } from '@/lib/closed-campaign';
 import { capitalStudy, inverseCropCapital, marginLevers, stockingStudy, feedlotTurningPoints, enterpriseIds, type LabInput } from '@/lib/decision-lab';
@@ -113,7 +115,7 @@ import {
   simulate,
   type Assumptions,
 } from '@/lib/livestock-model';
-import { photoReferenceAssumptions, photoParameterNotes, photoReferenceLimit } from '@/lib/photo-reference';
+import { photoReferenceAssumptions, withoutOpportunityCows, photoParameterNotes, photoReferenceLimit } from '@/lib/photo-reference';
 import { PhotoReferenceNotes } from '@/components/photo-reference';
 import {
   provenanceCanRank,
@@ -790,7 +792,10 @@ const photoPriceMetaDefaults = { ...appliedPriceMetaDefaults, cattle: {
 } };
 
 export default function Home() {
-  const [assumptions, setAssumptions] = useState<Assumptions>(photoReferenceAssumptions);
+  const [scenarioAssumptions, setAssumptions] = useState<Assumptions>(photoReferenceAssumptions);
+  // O escopo vale em todos os motores, relatórios e rotas de carregamento.
+  // Dados históricos continuam legíveis, mas não reativam a operação retirada.
+  const assumptions = useMemo(() => withoutOpportunityCows(scenarioAssumptions), [scenarioAssumptions]);
   const [crops, setCrops] = useState<CropAssumption[]>(cropDefaults);
   const [activeTab, setActiveTab] = useState('quick');
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
@@ -863,7 +868,7 @@ export default function Home() {
       !['defensive', 'base', 'balanced'].includes(data.strategyCriterion) ||
       !marketUfOptions.includes(data.marketUf)) throw new Error('Modo ou UF incompatível.');
     setReviewInputs(extras.reviewInputs);
-    setAssumptions(data.assumptions);
+    setAssumptions(withoutOpportunityCows(data.assumptions));
     setCrops(data.crops);
     setScenarioMode(data.scenarioMode);
     setMarketQuotes(data.marketQuotes);
@@ -893,8 +898,10 @@ export default function Home() {
     setGateAppliedPriceMeta(data.gateAppliedPriceMeta);
     setAppliedFutureFingerprints(data.appliedFutureFingerprints);
     const trail = extras.scenarioAuditTrail;
-    setScenarioAuditTrail([...trail.slice(-199), `Restaurado e recalculado no modelo ${MODEL_VERSION}; confirme novamente evidências e capacidade operacional.`]);
-    setSavedStatus('Cenário restaurado. Confirmações operacionais precisam ser renovadas.');
+    const scopeNotice = data.assumptions.includeCows
+      ? ' Vacas do cenário antigo removidas: sem receita, custos, margem ou capital comprometido com esse lote. Orçamento preservado; nenhum crédito fictício.' : '';
+    setScenarioAuditTrail([...trail.slice(-199), `Restaurado e recalculado no modelo ${MODEL_VERSION}; confirme novamente evidências e capacidade operacional.${scopeNotice}`]);
+    setSavedStatus('Cenário restaurado. Confirmações operacionais precisam ser renovadas.' + scopeNotice);
   };
   const serializedScenario = () => JSON.stringify({ schema: SCENARIO_SCHEMA,
     model: MODEL_VERSION, savedAt: new Date().toISOString(),
@@ -1365,8 +1372,8 @@ export default function Home() {
     // O orçamento não é um fato das fotos. Nunca elevá-lo para fabricar aprovação.
     setStrategyCapitalLimit(strategyCapitalLimit);
     setScenarioAuditTrail(current => [...current.slice(-199),
-      'Parâmetros das fotos: 400 ha, dieta manual R$ 1,1239/kg MS, vacas com custo agregado por vendida; complementos identificados. Orçamento preservado; confirmações removidas; sem ajuste de reconciliação na receita.']);
-    setSavedStatus('Referência das fotos carregada com vacas. Seu limite de capital e o arquivo salvo foram preservados. Confira as hipóteses complementares.');
+      'Parâmetros das fotos: 400 ha, dieta manual R$ 1,1239/kg MS, sem operação de vacas; complementos identificados. Orçamento preservado; confirmações removidas; sem crédito fictício ou ajuste de reconciliação na receita.']);
+    setSavedStatus('Referência das fotos carregada sem vacas. Seu limite de capital e o arquivo salvo foram preservados. Confira as hipóteses complementares.');
   };
 
   const fetchMarketPrices = async () => {
@@ -4138,6 +4145,7 @@ export default function Home() {
   }), [modelAssumptions, animalTimelineInputs.entryDate, animalTimelineInputs.gateValuePerKgLive, operationalInputs]);
   const closedCampaigns = useMemo(() => activeTab === 'campaign' ? (['A', 'B', 'C'] as const).map(route => closeCampaign(route === 'C' ? { ...campaignInput, a: rearingAssumptions } : campaignInput, route)) : [], [campaignInput, rearingAssumptions, activeTab]);
   const cycleRows = useMemo(() => productionCycles(modelAssumptions, animalTimelineInputs.gateValuePerKgLive, assumptions.calfCost), [modelAssumptions, animalTimelineInputs.gateValuePerKgLive, assumptions.calfCost]);
+  const equalCostStudy = useMemo(() => equalCattleCost(modelAssumptions, animalTimelineInputs.entryDate), [modelAssumptions, animalTimelineInputs.entryDate]);
   const leaseBurden =
     best.id !== 'none-feasible' && result.landLeaseCost > 0
       ? (result.landLeaseCost /
@@ -4574,14 +4582,20 @@ export default function Home() {
       ['Reconciliação', photoReferenceLimit],
       ['CICLO DO ANIMAL E OPERAÇÃO ANUAL CONTÍNUA'],
       ['Método', 'Ciclo = dias no pasto + dias no cocho. Fluxo anual limitado por capacidade de pasto, silagem e cocho. Não impõe compra diária ou encerramento em 365 dias. Não é caixa do primeiro ano.'],
-      ['Rota', 'Dias/animal', 'Comprados/ano', 'Vendidos/ano', 'Receita/boi vendido R$', 'Custo/boi vendido (rateio anual) R$', 'Margem/boi vendido (rateio anual) R$', 'Receita anual R$', 'Custo anual R$', 'Margem anual R$', 'Margem/ha total/ano R$', 'Extra vacas R$/ano'],
-      ...cycleRows.map(r => [r.route, r.cycleDays, r.entrants, r.sold, r.saleHead, r.costPerSold ?? 'n/d', r.marginPerSold ?? 'n/d', r.annualRevenue, r.annualCost, r.annualMargin, r.marginHa ?? 'n/d', r.extraCowMargin]),
-      ['VACAS — receita e custos já incluídos uma vez na rota A'],
-      ['Quantidade vendida/ano', 'Receita líquida R$/ano', 'Custo caixa R$/ano', 'Margem adicional R$/ano', 'Base do custo'],
-      ...cycleRows.filter(r => r.route === 'A').map(r => [r.cows, r.cowRevenue, r.cowCost, r.extraCowMargin, r.cowCostBasis]),
+      ['Rota', 'Dias/animal', 'Comprados/ano', 'Vendidos/ano', 'Receita/boi vendido R$', 'Custo/boi vendido (rateio anual) R$', 'Margem/boi vendido (rateio anual) R$', 'Receita anual R$', 'Custo anual R$', 'Margem anual R$', 'Margem/ha total/ano R$'],
+      ...cycleRows.map(r => [r.route, r.cycleDays, r.entrants, r.sold, r.saleHead, r.costPerSold ?? 'n/d', r.marginPerSold ?? 'n/d', r.annualRevenue, r.annualCost, r.annualMargin, r.marginHa ?? 'n/d']),
+      ['Escopo', 'Sem operação de vacas. Capital não comprometido permanece no orçamento informado; não é receita, lucro ou crédito adicional.'],
+      ['MESMO CUSTEIO ANUAL · A/B com áreas independentes'],
+      ['Escopo da equivalência', 'Somente bois, sem vacas ou crédito de efluente; não transfere automaticamente crédito medido para nova área.'],
+      ['Método', equalCostStudy.method],
+      ['Estado', equalCostStudy.error ?? 'custeio reconciliado'],
+      ['Custo-alvo R$/ano', equalCostStudy.target, 'Área-base de B ha', equalCostStudy.referenceArea],
+      ['Rota', 'Área irrigada ha', 'Pasto ha', 'Silagem ha', 'Bois vendidos/ano', 'Custo R$/ano', 'Receita R$/ano', 'Margem R$/ano', 'Dias/animal', 'Reserva operacional sem CAPEX R$', 'Área adicional necessária ha', 'Diferença de custo R$', 'Gargalo'],
+      ...equalCostStudy.rows.map(r => [r.route, r.area, r.pasture, r.silage, r.sold, r.cost, r.revenue, r.margin, r.days, r.operatingReserve ?? 'n/d', r.extraArea, r.costGap, r.bottleneck]),
+      ['Limites da equivalência', 'Vagas de cocho fixas; CAPEX/terra/pivôs/implantação não redimensionados. Sem custeio de área remanescente: projetos independentes. Área de lavouras externas para ração não incluída. Reserva operacional é caixa até primeiras vendas, não custo adicional.'],
       ['MEMÓRIA DE CUSTOS ANUAIS', 'Rota', 'Componente', 'Quantidade anual', 'Unidade', 'Custo unitário R$', 'Total anual R$', 'Origem/fórmula'],
       ...cycleRows.flatMap(r => r.costLines.map(l => ['Custo anual', r.route, l.label, l.quantity, l.unit, l.unitCost, l.total, l.source])),
-      ['Rateio', 'Custo/boi vendido = custos anuais dos bois/bois vendidos; inclui perdas, ociosidade, silagem integral e arrendamento. Vacas, se ativas, são extras separados. Margem por hectare usa toda a área-base. CAPEX, juros e tributos sobre resultado não estão na margem operacional.'],
+      ['Rateio', 'Custo/boi vendido = custos anuais dos bois/bois vendidos; inclui perdas, ociosidade, silagem integral e arrendamento. Margem por hectare usa toda a área-base. CAPEX, juros e tributos sobre resultado não estão na margem operacional.'],
       ...(activeTab === 'campaign' ? [
       ['FECHAMENTO INTEGRAL DA CAMPANHA · não é margem anual estabilizada'],
       ['Método', '365 coortes diárias de compras; nenhuma recompra na cauda; acompanhamento até última venda; sem vacas e efluente. Preços/GMD constantes, sem previsão automática. Mortalidade no fim da fase. Milho e outros ingredientes por reposição, sem venda duplicada.'],
@@ -4720,10 +4734,6 @@ export default function Home() {
       ['Pico de capacidade do cocho confirmado', allocationInputs.peakCapacityConfirmed ? 'sim' : 'não'],
       ['Calendário anual de coortes confirmado', allocationInputs.annualCalendarConfirmed ? 'sim' : 'não'],
       ['Pasto irrigado · água, energia, forragem e lotação confirmados', allocationInputs.pastureWaterForageConfirmed ? 'sim' : 'não'],
-      ['Janela das vacas de oportunidade confirmada', allocationInputs.cowOpportunityWindowConfirmed ? 'sim' : 'não'],
-      ['Fonte/data da compra e venda das vacas válidas', cowOpportunityPricesValid ? 'sim' : 'não'],
-      ['Compra da vaca · data/fonte', `${allocationInputs.cowBuyQuoteDate || 'sem data'} · ${allocationInputs.cowBuyQuoteSource || 'sem fonte'}`],
-      ['Venda da vaca · data/fonte', `${allocationInputs.cowSaleQuoteDate || 'sem data'} · ${allocationInputs.cowSaleQuoteSource || 'sem fonte'}`],
       ['Período medido do módulo de efluente confirmado', allocationInputs.effluentCalibrationPeriodConfirmed ? 'sim' : 'não'],
       ['Fonte da calibração do efluente', effluentScale.calibrationSource || 'sem fonte'],
       ['Período medido da calibração', `${effluentScale.calibrationPeriodStart || 'sem início'} a ${effluentScale.calibrationPeriodEnd || 'sem fim'}`],
@@ -5222,14 +5232,10 @@ export default function Home() {
 <Control label={'Produtividade · ' + crop.shortName} value={crop.yield} suffix={crop.unit} min={0} max={crop.id === 'cotton-irrigated' ? 1000 : 500} step={1} onChange={(value) => updateCrop(crop.id, 'yield', value)} />
 </section>)}
 <Button variant="outline" className="w-full" onClick={() => { setMobileControlsOpen(false); openAnalysisTab('costs'); }}>Detalhar custos de cultivo</Button></> },
-{ id: 'investment', title: 'Investimentos e extras', summary: 'Pivô ' + moneyCompact(assumptions.pivotInvestment) + ' · cocho ' + moneyCompact(assumptions.investment) + (assumptions.includeCows ? ' · vacas incluídas' : '') + (assumptions.includeEffluentSavings ? ' · efluente hipotético' : ''), children: <><p className="text-sm text-muted-foreground">Informe somente investimento novo. Não relance a estrutura já paga.</p>
+{ id: 'investment', title: 'Investimentos e extras', summary: 'Pivô ' + moneyCompact(assumptions.pivotInvestment) + ' · cocho ' + moneyCompact(assumptions.investment) + (assumptions.includeEffluentSavings ? ' · efluente hipotético' : ''), children: <><p className="text-sm text-muted-foreground">Informe somente investimento novo. Não relance a estrutura já paga.</p>
 <Control label="CAPEX comum do pivô" value={assumptions.pivotInvestment} suffix="R$" min={0} max={200000000} step={100000} onChange={(value) => update('pivotInvestment', value)} />
 <Control label="Investimento incremental" value={assumptions.investment} suffix="R$" min={0} max={100000000} step={100000} onChange={(value) => update('investment', value)} />
 <details className="editor-detail"><summary>Taxa de retorno e prazo</summary><div className="mt-4 space-y-4"><p className="text-xs text-muted-foreground">TMA é a taxa mínima de atratividade. Afeta o valor do investimento, não a receita operacional.</p><Control label="TMA" value={assumptions.discountRate} suffix="% a.a." min={0} max={40} step={0.5} onChange={(value) => update('discountRate', value)} /><Control label="Horizonte" value={assumptions.horizon} suffix="anos" min={1} max={30} step={1} onChange={(value) => update('horizon', value)} /></div></details>
-<details className="editor-detail"><summary>Vacas de oportunidade · {assumptions.includeCows ? 'incluídas' : 'não incluídas'}</summary><div className="mt-4 space-y-4"><div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
-                <div><p className="text-sm font-semibold">Vacas de oportunidade</p><p className="text-xs text-muted-foreground">Extra com receita e custos; um lote na mesma área pós-silagem. Janela ainda precisa de validação de campo.</p></div>
-                <Switch aria-label="Incluir vacas de oportunidade" checked={assumptions.includeCows} onCheckedChange={(checked) => update('includeCows', checked)} />
-              </div>{assumptions.includeCows ? <><Control label="Compra da vaca magra" value={assumptions.cowBuyCost} suffix="R$/cab" min={0} max={20000} step={25} onChange={(value) => update('cowBuyCost', value)} /><Control label="Índice de venda da vaca · base 300" value={assumptions.cowSaleArroba} suffix="R$/@" min={0} max={1000} step={0.5} onChange={(value) => update('cowSaleArroba', value)} /><p className="text-xs text-muted-foreground">Receita líquida = R$ 5.034,69/cab × índice/300. É uma escala sobre a receita derivada das fotos, não um rendimento de carcaça comprovado.</p><div className="flex items-center justify-between gap-3 rounded-xl border p-3"><div><p className="text-sm font-semibold">Custo agregado das fotos</p><p className="text-xs text-muted-foreground">Ligado: R$ 4.382,82 por vendida na base. Desligado: ratear compras e perda hipotética de 0,25%. Não somar os dois.</p></div><Switch aria-label="Usar custo agregado das fotos para vacas" checked={assumptions.cowCostBasis === 'reported-per-sold'} onCheckedChange={checked => update('cowCostBasis', checked ? 'reported-per-sold' : 'purchases-with-losses')} /></div></> : null}</div></details>
 <details className="editor-detail"><summary>Efluente · {assumptions.includeEffluentSavings ? 'hipótese incluída' : 'sem crédito'}</summary><div className="mt-4 space-y-4"><div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
                 <div><p className="text-xs font-semibold">Crédito bruto calibrado do efluente</p><p className="text-[10px] text-muted-foreground">Escala pelas cabeças-dia próprias; exige medição, análise, eficiência e licenças</p></div>
                 <Switch aria-label="Incluir crédito hipotético do efluente" checked={assumptions.includeEffluentSavings} onCheckedChange={(checked) => update('includeEffluentSavings', checked)} />
@@ -5241,7 +5247,7 @@ export default function Home() {
 <Control label="Animais do módulo-base" value={allocationInputs.effluentReferenceAnnualHeads} suffix="cab/ano" min={1} max={500000} step={25} onChange={(value) => updateAllocation('effluentReferenceAnnualHeads', value)} />
 <Control label="Dias no cocho do módulo-base" value={allocationInputs.effluentReferenceConfinementDays} suffix="dias" min={1} max={365} step={1} onChange={(value) => updateAllocation('effluentReferenceConfinementDays', value)} /></> : null}</div></details></> }]}
             footer={<details className="editor-detail"><summary>Base e restauração do cenário</summary><div className="mt-3 space-y-3">
-              <p className="text-sm text-muted-foreground">Salve antes de substituir a tela. A base das fotos repõe preços históricos, dieta manual, vacas e complementos operacionais; preserva seu limite de capital e não altera o arquivo salvo. Restaurar tudo também repõe o orçamento inicial de R$ 30 milhões, que é hipótese do simulador.</p>
+              <p className="text-sm text-muted-foreground">Salve antes de substituir a tela. A base das fotos repõe preços históricos, dieta manual e complementos operacionais, sem lote de vacas; preserva seu limite de capital e não altera o arquivo salvo. Restaurar tudo também repõe o orçamento inicial de R$ 30 milhões, que é hipótese do simulador.</p>
               <Button variant="outline" className="w-full" disabled={explorationLoading} onClick={loadProductionBase}>Usar parâmetros das fotos · 400 ha</Button>
               <Button variant="outline" className="w-full" disabled={explorationLoading} onClick={resetScenario}><RefreshCw /> Restaurar tudo</Button>
               <PhotoReferenceNotes />
@@ -5308,6 +5314,7 @@ export default function Home() {
 
               </div>
               </div></details>
+              <EqualCattleCostPanel study={equalCostStudy} />
               <DecisionLab input={decisionLabInput} onEdit={openEditor} onBudget={updateStrategyCapitalLimit}
                 onValidate={() => openAnalysisTab('audit')} onCosts={() => openAnalysisTab('costs')} />
               <div className="no-print grid gap-3 sm:grid-cols-2">
@@ -5500,10 +5507,9 @@ export default function Home() {
                   <Metric label="Potencial de bois no pasto A" value={`${int.format(result.simultaneousPivotA)} cab`} note={`Não é o fluxo roteado. Pasto efetivamente usado pelo fluxo: ${int.format(result.entrantsA * result.daysPivotA / 365)} cabeças médias.`} icon={<Beef className="size-4" />} />
                   <Metric label="Potencial físico integral" value={`${int.format(result.soldA)} cab/ano`} note="Só vale se mercado, dieta, coortes e pico fecharem; não é o destino atual" tone="warn" />
                   <Metric label="Vagas indicativas de confinamento" value={`${int.format(result.recommendedConfinementCapacity)} cab`} note={`Ocupação média modelada + 10% assumidos; validar pico e manejo`} icon={<Factory className="size-4" />} />
-                  <Metric label="Vacas de oportunidade" value={`${int.format(result.cowsSold)} cab/ano`} note={assumptions.includeCows ? `${int.format(result.cowWindowArea)} ha pós-silagem · um lote a 8 cab/ha` : 'Desligadas; não há área ou receita implícita'} />
                   <Metric label="Lotação de equilíbrio" value={`${two.format(result.balancedStockingUa)} UA/ha`} note="Ponto em que pasto e silagem fecham juntos" tone="green" />
                   <Metric label="Dieta por boi" value={`${one.format(result.dietDmHead)} t MS`} note={`${two.format(assumptions.dietDmDay)} kg MS/dia`} />
-                  <Metric label="Compra anual de animais" value={moneyCompact(cattlePurchaseA)} note="Bois + vacas; não é CAPEX" tone="warn" icon={<CircleDollarSign className="size-4" />} />
+                  <Metric label="Compra anual de animais" value={moneyCompact(cattlePurchaseA)} note="Compra dos bois; não é CAPEX" tone="warn" icon={<CircleDollarSign className="size-4" />} />
                   <Metric label="Milho no destino atual" value={`${int.format(feedAllocation.grainDemandSacks)} sc/ano`} note={`${int.format(feedAllocation.ownGrainUsedSacks)} próprias + ${int.format(feedAllocation.purchasedGrainSacks)} compradas`} tone="warn" icon={<Wheat className="size-4" />} />
                   <Metric label="Área de milho vinculada" value={`${one.format(linkedGrainAreaHa)} ha`} note={linkedGrainAreaHa > 0 ? 'Produção e margem do milho reconciliadas no sistema A' : 'Nenhuma área própria consumida pelo roteador'} tone={linkedGrainAreaHa > 0 ? 'warn' : 'plain'} />
                   <Metric label="Footprint econômico integrado" value={`${one.format(integratedSystemFootprintA)} ha`} note="Área-base + milho próprio efetivamente vinculado" />
@@ -5786,11 +5792,9 @@ export default function Home() {
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white p-3"><div><p className="text-xs font-semibold">Pico de capacidade conferido</p><p className="text-[9px] text-muted-foreground">Com datas completas, o motor testa a ocupação por semana; sem elas, mantém o teto simultâneo conservador</p></div><Switch aria-label="Confirmar pico de capacidade do cocho" checked={allocationInputs.peakCapacityConfirmed} onCheckedChange={(checked) => updateAllocation('peakCapacityConfirmed', checked)} /></div>
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white p-3"><div><p className="text-xs font-semibold">Calendário anual</p><p className="text-[9px] text-muted-foreground">Este lote e seus preços representam as coortes do ano; sem isso não há escala anual</p></div><Switch aria-label="Confirmar calendário anual de coortes" checked={allocationInputs.annualCalendarConfirmed} onCheckedChange={(checked) => updateAllocation('annualCalendarConfirmed', checked)} /></div>
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white p-3"><div><p className="text-xs font-semibold">Pasto irrigado validado</p><p className="text-[9px] text-muted-foreground">Água, energia, outorga, forragem e lotação suportam a janela e toda a área</p></div><Switch aria-label="Confirmar água, forragem e lotação do pasto irrigado" checked={allocationInputs.pastureWaterForageConfirmed} onCheckedChange={(checked) => updateAllocation('pastureWaterForageConfirmed', checked)} /></div>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white p-3"><div><p className="text-xs font-semibold">Janela das vacas validada</p><p className="text-[9px] text-muted-foreground">Obrigatório só quando vacas de oportunidade estão ligadas; confirma área, datas e 8 cab/ha</p></div><Switch aria-label="Confirmar janela das vacas de oportunidade" checked={allocationInputs.cowOpportunityWindowConfirmed} disabled={!assumptions.includeCows} onCheckedChange={(checked) => updateAllocation('cowOpportunityWindowConfirmed', checked)} /></div>
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white p-3"><div><p className="text-xs font-semibold">Crédito aplicado do efluente</p><p className="text-[9px] text-muted-foreground">Só libera o volume aplicado após proveniência, período comum, análise, eficiência e requisitos aplicáveis</p></div><Switch aria-label="Confirmar crédito agronômico do efluente" checked={allocationInputs.effluentCreditConfirmed} disabled={!assumptions.includeEffluentSavings || !effluentScale.calibrationReady || !effluentScale.provenanceReady || !effluentScale.excessDestinationReady || effluentScale.currentOwnFeedlotHeadDays <= 0} onCheckedChange={(checked) => updateAllocation('effluentCreditConfirmed', checked)} /></div>
                   </div>
                   {assumptions.includeEffluentSavings ? <div className="mt-3 rounded-xl border border-border/70 bg-white p-3"><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5"><label htmlFor="effluent-calibration-source"><span className="mb-1 block text-[9px] text-muted-foreground">Fonte da calibração</span><Input id="effluent-calibration-source" className="h-8 text-xs" placeholder="registro/documento que fecha volume e cabeças-dia" value={allocationInputs.effluentCalibrationSource} onChange={(event) => updateAllocation('effluentCalibrationSource', event.target.value)} /></label><label htmlFor="effluent-calibration-start"><span className="mb-1 block text-[9px] text-muted-foreground">Início do período medido</span><Input id="effluent-calibration-start" className="h-8 text-xs" type="date" value={allocationInputs.effluentCalibrationPeriodStart} onChange={(event) => updateAllocation('effluentCalibrationPeriodStart', event.target.value)} /></label><label htmlFor="effluent-calibration-end"><span className="mb-1 block text-[9px] text-muted-foreground">Fim do período medido</span><Input id="effluent-calibration-end" className="h-8 text-xs" type="date" value={allocationInputs.effluentCalibrationPeriodEnd} onChange={(event) => updateAllocation('effluentCalibrationPeriodEnd', event.target.value)} /></label><label htmlFor="effluent-value-source"><span className="mb-1 block text-[9px] text-muted-foreground">Fonte do valor evitável</span><Input id="effluent-value-source" className="h-8 text-xs" placeholder="memória/orçamento local do R$/m³" value={allocationInputs.effluentValueSource} onChange={(event) => updateAllocation('effluentValueSource', event.target.value)} /></label><label htmlFor="effluent-value-date"><span className="mb-1 block text-[9px] text-muted-foreground">Data do valor evitável</span><Input id="effluent-value-date" className="h-8 text-xs" type="date" value={allocationInputs.effluentValueDate} onChange={(event) => updateAllocation('effluentValueDate', event.target.value)} /></label></div><div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-[#fafbf8] p-3"><div><p className="text-xs font-semibold">Mesmo período e denominador</p><p className="text-[9px] text-muted-foreground">Confirma que volume, 50 ha × 150 mm/ano e 6.725 cab × 95 dias pertencem ao período informado</p></div><Switch aria-label="Confirmar período comum da calibração do efluente" checked={allocationInputs.effluentCalibrationPeriodConfirmed} disabled={!allocationInputs.effluentCalibrationSource.trim() || !effluentScale.calibrationPeriodValid} onCheckedChange={(checked) => updateAllocation('effluentCalibrationPeriodConfirmed', checked)} /></div>{effluentScale.excessRequiresDestination ? <div className="mt-3 grid gap-2 rounded-xl border border-[#e2c37e]/45 bg-[#fff8e9] p-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]"><label htmlFor="effluent-excess-destination"><span className="mb-1 block text-[9px] text-muted-foreground">Destino operacional dos {int.format(effluentScale.volumeExcessM3)} m³ excedentes</span><Input id="effluent-excess-destination" className="h-8 text-xs" placeholder="destino, período e responsável; ou reduza a escala do cocho" value={allocationInputs.effluentExcessDestination} onChange={(event) => updateAllocation('effluentExcessDestination', event.target.value)} /></label><label htmlFor="effluent-excess-capacity"><span className="mb-1 block text-[9px] text-muted-foreground">Capacidade validada</span><div className="flex items-center gap-1"><NumericInput id="effluent-excess-capacity" className="h-8 text-right font-mono text-xs" min={0} step={1000} value={allocationInputs.effluentExcessDestinationCapacityM3} onValueChange={(numericValue) => updateAllocation('effluentExcessDestinationCapacityM3', Math.max(0, numericValue || 0))} /><span className="text-[9px]">m³/ano</span></div></label><div className="flex items-end"><div className="flex w-full items-center justify-between gap-3 rounded-lg border border-border/70 bg-white p-2"><span className="text-[9px] font-semibold">Rota suporta todo o excedente</span><Switch aria-label="Confirmar destino operacional do excedente" checked={allocationInputs.effluentExcessDestinationConfirmed} disabled={!allocationInputs.effluentExcessDestination.trim() || allocationInputs.effluentExcessDestinationCapacityM3 + 1e-6 < effluentScale.volumeExcessM3} onCheckedChange={(checked) => updateAllocation('effluentExcessDestinationConfirmed', checked)} /></div></div><p className="text-[9px] leading-relaxed text-muted-foreground md:col-span-3">O excedente não recebe crédito na área-alvo. Informe uma rota local comprovável; o simulador não presume armazenamento, área receptora, transferência ou autorização.</p></div> : null}<p className={`mt-3 text-[10px] leading-relaxed ${effluentScale.provenanceReady && effluentScale.excessDestinationReady ? 'text-[#315a3e]' : 'text-[#735a2a]'}`}>{effluentScale.provenanceReady && effluentScale.excessDestinationReady ? 'Proveniência mínima e balanço do excedente fechados; confirme o crédito aplicado no cartão acima.' : effluentScale.blockers.join(' ')}</p></div> : null}
-                  {assumptions.includeCows ? <div className="mt-3 grid gap-2 rounded-xl border border-border/70 bg-white p-3 md:grid-cols-2 xl:grid-cols-4"><label htmlFor="cow-buy-quote-date"><span className="mb-1 block text-[9px] text-muted-foreground">Data da compra</span><Input id="cow-buy-quote-date" className="h-8 text-xs" type="date" value={allocationInputs.cowBuyQuoteDate} onChange={(event) => updateAllocation('cowBuyQuoteDate', event.target.value)} /></label><label htmlFor="cow-buy-quote-source"><span className="mb-1 block text-[9px] text-muted-foreground">Fonte da compra</span><Input id="cow-buy-quote-source" className="h-8 text-xs" placeholder="praça, fornecedor ou boletim" value={allocationInputs.cowBuyQuoteSource} onChange={(event) => updateAllocation('cowBuyQuoteSource', event.target.value)} /></label><label htmlFor="cow-sale-quote-date"><span className="mb-1 block text-[9px] text-muted-foreground">Data da venda</span><Input id="cow-sale-quote-date" className="h-8 text-xs" type="date" value={allocationInputs.cowSaleQuoteDate} onChange={(event) => updateAllocation('cowSaleQuoteDate', event.target.value)} /></label><label htmlFor="cow-sale-quote-source"><span className="mb-1 block text-[9px] text-muted-foreground">Fonte da venda</span><Input id="cow-sale-quote-source" className="h-8 text-xs" placeholder="praça, frigorífico ou boletim" value={allocationInputs.cowSaleQuoteSource} onChange={(event) => updateAllocation('cowSaleQuoteSource', event.target.value)} /></label><p className="text-[9px] text-muted-foreground md:col-span-2 xl:col-span-4">Compra: {brl0.format(assumptions.cowBuyCost)}/cab · venda: {brl2.format(assumptions.cowSaleArroba)}/@ · {cowOpportunityPricesValid ? 'fontes recentes válidas' : 'preencha fonte e data'}.</p></div> : null}
                 </div>
                 <div className="grid gap-3 px-5 pb-5 md:grid-cols-3 lg:px-6">
                   {lotProfiles.map((lot) => {
@@ -6266,6 +6270,7 @@ export default function Home() {
 
             <TabsContent value="report" className="space-y-5" id="report-output">
               <ProductionCyclePanel rows={cycleRows} report />
+              <EqualCattleCostPanel study={equalCostStudy} report />
               <PhotoReferenceNotes report />
               <Panel><SectionTitle eyebrow="Mesmo capital · área parcial" title="Escalas que o orçamento permite estudar" text="Margens anuais de regime pleno, não lucro líquido ou retorno do primeiro ano. O quadro geral compara a área inteira; aqui a escala pode diminuir para caber no caixa." /><div className="p-5"><Table><TableHeader><TableRow><TableHead>Alternativa</TableHead><TableHead>Área testada de maior margem</TableHead><TableHead>Margem anual</TableHead><TableHead>Capital exigido</TableHead><TableHead>Capital para área inteira</TableHead></TableRow></TableHeader><TableBody>{reportCapitalStudy?.rows.map(r => <TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{one.format(r.best.area)} ha</TableCell><TableCell>{brl0.format(r.best.margin)}</TableCell><TableCell>{brl0.format(r.best.capital)}</TableCell><TableCell>{brl0.format(r.full.capital)}</TableCell></TableRow>)}</TableBody></Table><p className="mt-3 text-sm text-muted-foreground">Busca discreta, não ótimo global. Arrendamento ocioso, CAPEX e reserva mantidos. Não operar pode evitar perda incremental. CSV inclui alavancas, lotação, equivalência de custeio e preços de indiferença do cocho.</p></div></Panel>
               {scenarioMode === 'exploration' ? <div className="rounded-2xl border-2 border-[#d49e37]/45 bg-[#fff4d8] p-4 text-sm font-semibold text-[#6b4a12]">DEMONSTRAÇÃO — este relatório contém preços, capacidades, calendários e confirmações ilustrativas. Não use como recomendação, orçamento ou aprovação de investimento.</div> : null}

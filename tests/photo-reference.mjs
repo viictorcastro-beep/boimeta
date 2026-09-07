@@ -1,11 +1,36 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { photoReferenceAssumptions, photoReferenceLimit } from '../lib/photo-reference.ts';
+import { photoReferenceAssumptions, withoutOpportunityCows, photoReferenceLimit } from '../lib/photo-reference.ts';
+import { cattleCapitalRequirement } from '../lib/decision-review.ts';
 import { calculateCore, defaultAssumptions } from '../lib/livestock-model.ts';
 import { productionCycles } from '../lib/production-cycle.ts';
 import { validateScenario, SCENARIO_SCHEMA } from '../lib/scenario-storage.ts';
 const near = (a,b,label) => assert.ok(Math.abs(a-b)<0.0001, `${label}: ${a} vs ${b}`);
-const a=photoReferenceAssumptions(), c=calculateCore(a), without=calculateCore({...a,includeCows:false});
+// A fonte histórica permanece testável, mas não é o escopo da operação ativa.
+const active=photoReferenceAssumptions(), a={...active,includeCows:true}, c=calculateCore(a), without=calculateCore(active);
+assert.equal(active.includeCows,false);
+near(without.cowsSold,0,'nenhum lote de vacas na base ativa');
+near(without.ebitdaA,9455710.626794597,'margem sem crédito fictício');
+for (const patch of [{}, {stockingUa:10,gmdFeedlot:1.5}, {cowBuyCost:9000}, {totalArea:0}]) {
+  const historical={...a,...patch}, snapshot={...historical};
+  const clean=withoutOpportunityCows(historical), before=calculateCore(historical), after=calculateCore(clean);
+  assert.deepEqual(historical,snapshot,'não reescrever a fonte carregada');
+  assert.deepEqual(clean,{...historical,includeCows:false},'nenhuma outra premissa muda');
+  assert.deepEqual(withoutOpportunityCows(clean),clean,'aplicar duas vezes é seguro');
+  near(after.ebitdaA-before.ebitdaA,-before.cowsSold*before.cowCashMargin,'retira margem, inclusive prejuízo');
+  for(const key of ['soldA','soldB','ebitdaB','pastureAreaA','silageArea','daysPivotA','daysFeedlot']) near(after[key],before[key],key);
+  for(const row of productionCycles(clean,12.5)) {
+    assert.equal(row.cows,0);
+    assert.equal(row.extraCowMargin,0);
+    assert.equal(row.cowRevenue,0);
+    assert.equal(row.cowCost,0);
+    assert.ok(row.costLines.every(line=>!line.label.includes('Vacas')),'sem linha inativa no relatório');
+  }
+}
+near(cattleCapitalRequirement(a,'A').required-cattleCapitalRequirement(active,'A').required,3497490.36,'libera necessidade de custeio uma vez');
+near(cattleCapitalRequirement(active,'A').required,33529090.018534,'capital requerido, não orçamento novo');
+near(cattleCapitalRequirement(a,'A',40000000).required,cattleCapitalRequirement(active,'A',40000000).required,'outro pico dominante não recebe abatimento artificial');
+assert.equal(active.investment,a.investment,'CAPEX não é excluído sem orçamento por ativo');
 assert.deepEqual([a.totalArea,a.silageShare,a.entryWeight,a.pivotExitWeight,a.saleWeight], [400,25,240,400,540]);
 assert.deepEqual([a.gmdPivotA,a.gmdFeedlot,a.gmdB,a.dietDmDay,a.dietPriceDm,a.supplementPrice], [.9,1.48,1,11.14,1.1239,5.08]);
 assert.equal(a.linkFeedToCropCosts,false);
@@ -40,8 +65,8 @@ const physical=calculateCore({...a,cowCostBasis:'purchases-with-losses'});
 near(physical.cowCashCost,4393.744461152882,'modo operacional legado preservado');
 near(physical.cowCashMargin,640.945538847118,'perdas não desaparecem no modo físico');
 assert.equal(defaultAssumptions.includeCows,false,'default legado do motor não reescreve snapshots');
-const mutated=photoReferenceAssumptions(); mutated.dietPriceDm=99; mutated.includeCows=false;
-assert.deepEqual(photoReferenceAssumptions(),a,'preset novo não herda alterações anteriores');
+const mutated=photoReferenceAssumptions(); mutated.dietPriceDm=99; mutated.includeCows=true;
+assert.deepEqual(photoReferenceAssumptions(),active,'preset novo não herda alterações anteriores');
 const restored=validateScenario({schema:SCENARIO_SCHEMA,model:'2026-09-07.7',data:{assumptions:a}}, {assumptions:a});
 assert.equal(restored.assumptions.cowCostBasis,'reported-per-sold');
 const legacy={...a}; delete legacy.cowCostBasis;
@@ -49,6 +74,16 @@ const old=validateScenario({schema:SCENARIO_SCHEMA,model:'2026-09-07.6',data:{as
 assert.equal(old.assumptions.cowCostBasis,'purchases-with-losses','legado não herda base da tela atual');
 assert.throws(()=>validateScenario({schema:1,model:'2026-09-07.7',data:{assumptions:{...a,cowCostBasis:'invented'}}},{assumptions:a}));
 const source=readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
+assert.match(source,/withoutOpportunityCows\(scenarioAssumptions\)/,'proteção de escopo em todas as rotas');
+const restore=source.split('const restoreScenario = (raw: unknown) => {')[1].split('const serializedScenario')[0];
+assert.match(restore,/setAssumptions\(withoutOpportunityCows\(data.assumptions\)\)/);
+assert.match(restore,/setStrategyCapitalLimit\(data.strategyCapitalLimit\)/,'orçamento importado preservado');
+assert.match(restore,/Vacas do cenário antigo removidas/,'migração é informada');
+const imported=validateScenario({schema:SCENARIO_SCHEMA,model:'2026-09-07.7',data:{assumptions:a,strategyCapitalLimit:6000000}}, {assumptions:active,strategyCapitalLimit:30000000});
+assert.equal(withoutOpportunityCows(imported.assumptions).includeCows,false);
+assert.equal(imported.strategyCapitalLimit,6000000);
+assert.equal(validateScenario({schema:SCENARIO_SCHEMA,model:'2026-09-07.8',data:{assumptions:active}}, {assumptions:active}).assumptions.includeCows,false);
+for(const text of ['Incluir vacas de oportunidade','Extra vacas R$/ano','VACAS — receita e custos','Janela das vacas validada','Compra da vaca magra']) assert.ok(!source.includes(text),'sem controle/relatório ativo: '+text);
 const loader=source.split('const loadProductionBase = () => {')[1].split('const fetchMarketPrices')[0];
 assert.match(loader,/resetScenario\(\)/);
 assert.match(loader,/setStrategyCapitalLimit\(strategyCapitalLimit\)/,'não inflar capital do usuário');
@@ -57,5 +92,5 @@ assert.doesNotMatch(loader,/localStorage|saveLocalScenario/,'preset não escreve
 const reset=source.split('const resetScenario = () => {')[1].split('const exitExplorationScenario')[0];
 for(const setter of ['setAssumptions(photoReferenceAssumptions())','setAllocationInputs(photoAllocationDefaults)','setAnimalTimelineInputs(photoTimelineDefaults)','setHerdFlowInputs(photoHerdDefaults)','setBreedingEconomicsInputs(photoBreedingDefaults)','setOperationalInputs(operationalDefaults)','setReviewInputs(reviewDefaults)','setAppliedPriceMeta(photoPriceMetaDefaults)','setAppliedFutureFingerprints(appliedFutureFingerprintDefaults)']) assert.ok(reset.includes(setter),setter);
 assert.doesNotMatch(reset,/localStorage|saveLocalScenario/);
-console.log('Fotos: parâmetros, vacas (receita/custo/margem), escala, perdas, migração e reset aprovados.');
-console.log(JSON.stringify({soldA:c.soldA,soldB:c.soldB,cows:c.cowsSold,marginA:c.ebitdaA,marginB:c.ebitdaB,cowMargin:c.cowsSold*c.cowCashMargin,marginHaTotalA:c.ebitdaA/400}));
+console.log('Fotos: operação sem vacas, orçamento preservado, histórico auditável, migração e reset aprovados.');
+console.log(JSON.stringify({soldA:without.soldA,soldB:without.soldB,cows:without.cowsSold,marginA:without.ebitdaA,marginB:without.ebitdaB,marginHaTotalA:without.ebitdaA/400}));

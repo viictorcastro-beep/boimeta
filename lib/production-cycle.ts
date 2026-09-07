@@ -44,7 +44,7 @@ export function productionCycles(a: Assumptions, gateNetPrice: number, calfCostC
       line('Silagem: orçamento anual da área inteira', route === 'A' ? c.silageArea * a.silageCrops : 0, 'ha-corte/ano', a.silageCostHaCut * factor,
         'Área × cortes/ano × custo/ha/corte × fator. Sobra é custeada e não vira receita'),
       line('Arrendamento', a.totalArea, 'ha por ano', a.landLeaseHa, 'Toda a área-base × R$/ha/ano informado'),
-      line('Vacas de oportunidade, se ativadas', cows, 'vendidas/ano', c.cowCashCost, 'Extra separado: custo unitário do módulo de vacas; não incluído no rateio por boi'),
+      ...(cows > 0 ? [line('Vacas de oportunidade, se ativadas', cows, 'vendidas/ano', c.cowCashCost, 'Extra separado: custo unitário do módulo de vacas; não incluído no rateio por boi')] : []),
     ];
     const annualRevenue = route === 'A' ? c.netRevenueA : route === 'B' ? c.netRevenueB : r.revenue;
     const annualCost = route === 'A' ? c.cashCostsA : route === 'B' ? c.cashCostsB : r.costs;
@@ -57,7 +57,7 @@ export function productionCycles(a: Assumptions, gateNetPrice: number, calfCostC
       exitWeight: route === 'C' ? a.pivotExitWeight : a.saleWeight,
       pastureArea, totalArea: a.totalArea, stockingUa: a.stockingUa,
       theoreticalPastureEntries: pastureArea * a.stockingUa * 450 / ((a.entryWeight + pastureExit) / 2) * 365 / Math.max(1, pastureDays),
-      entrants, feedEntrants, sold, cows, extraCowMargin: cows * c.cowCashMargin, cowRevenue: cows * c.cowNetSale,
+      entrants, feedEntrants, sold, cows, extraCowMargin: cows > 0 ? cows * c.cowCashMargin : 0, cowRevenue: cows * c.cowNetSale,
       cowCost: cows * c.cowCashCost, cowNetSaleHead: c.cowNetSale, cowCostHead: c.cowCashCost,
       cowCostBasis: c.cowCostBasis, cowWindowArea: route === 'A' ? c.cowWindowArea : 0,
       saleHead, bullCost, costPerSold: sold > 0 ? bullCost / sold : null,

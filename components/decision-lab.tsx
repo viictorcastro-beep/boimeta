@@ -621,11 +621,7 @@ export function DecisionLab({
                 Busca de 5% a 80% de silagem, de 1 em 1 ponto percentual, mais a
                 divisão atual; cocho e CAPEX constantes. É sensibilidade de
                 área, não projeto agronômico. Não vende sobra nem compra
-                silo/terra automaticamente. Vacas seguem a hipótese atual{' '}
-                {input.a.includeCows
-                  ? 'ligada, sujeita à janela pós-silagem'
-                  : 'desligada'}
-                .
+                silo/terra automaticamente. Sem vacas de oportunidade.
               </p>
             </div>
           </details>

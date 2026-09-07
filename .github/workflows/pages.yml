@@ -37,6 +37,7 @@ jobs:
       - run: pnpm test:campaign
       - run: pnpm test:cycle
       - run: pnpm test:reference
+      - run: pnpm test:equal-cost
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:render
