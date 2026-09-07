@@ -49,7 +49,8 @@ test('Área zero não gera animais ou margem', () => {
 });
 test('Silagem sem gado continua tendo custo', () => {
   const r = calculateCore({ ...defaultAssumptions, stockingUa: 0, includeCows: false });
-  close(r.cashCostsA, 1090000); close(r.ebitdaA, -1090000);
+  const ongoingCost = 1090000 + 300 * 6725 * (432.62 + 19.97) / 300;
+  close(r.cashCostsA, ongoingCost); close(r.ebitdaA, -ongoingCost);
 });
 test('Cem por cento silagem não cria hectare de pasto', () => {
   const r = calculateCore({ ...defaultAssumptions, silageShare: 100, includeCows: false });

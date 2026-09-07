@@ -11,6 +11,9 @@ export function csvCell(value: string | number) {
 export function validateScenario<T>(document: unknown, template: T): T {
   if (!document || typeof document !== 'object' ||
     (document as { schema?: number }).schema !== SCENARIO_SCHEMA) throw new Error('Versão de cenário incompatível.');
+  const model = (document as { model?: unknown }).model;
+  if (model !== undefined && model !== '2026-09-06.1' && model !== '2026-09-06.2')
+    throw new Error('Versão de cálculo não suportada. Preserve o arquivo e importe com a versão correspondente.');
   const walk = (value: unknown, base: unknown, key = ''): unknown => {
     if (typeof base === 'number') {
       if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12)
@@ -49,6 +52,10 @@ export function validateScenario<T>(document: unknown, template: T): T {
     }
     if (Array.isArray(base)) {
       if (!Array.isArray(value) || value.length > 500) throw new Error('Lista inválida: ' + key);
+      if (key === 'scenarioAuditTrail') {
+        if (value.length > 200 || value.some((item) => typeof item !== 'string' || item.length > 4000)) throw new Error('Histórico de auditoria inválido.');
+        return value.slice(-200);
+      }
       if (!base.length) return [];
       if (value.length !== base.length) throw new Error('Lista incompatível: ' + key);
       return value.map((item, i) => walk(item, base[i], key));
@@ -60,7 +67,16 @@ export function validateScenario<T>(document: unknown, template: T): T {
     }
     return base;
   };
-  const data = walk((document as { data?: unknown }).data, template) as T;
+  // Migração estável: campos novos não herdam alterações feitas na tela atual.
+  const original = (document as { data?: Record<string, unknown> }).data;
+  const inputData = original && typeof original === 'object' ? { ...original } : original;
+  if (inputData && Array.isArray(inputData.crops)) {
+    const fixed: Record<string, number> = { 'soy-irrigated': 1000, 'corn-irrigated': 1100, 'cotton-irrigated': 1946.12592 };
+    inputData.crops = inputData.crops.map((crop: Record<string, unknown>) => crop && typeof crop === 'object' ? {
+      ...crop, fixedCostHa: crop.fixedCostHa ?? (fixed[String(crop.id)] ?? 0) * (typeof crop.fixedRate === 'number' ? crop.fixedRate / 10 : 1),
+    } : crop);
+  }
+  const data = walk(inputData, template) as T;
   const assumptions = (data as { assumptions?: Record<string, number> }).assumptions;
   if (assumptions) {
     for (const [key, value] of Object.entries(assumptions)) {

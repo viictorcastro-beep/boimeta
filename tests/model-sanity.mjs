@@ -1031,6 +1031,9 @@ assertClose(mismatchedCalendarFeed.lots[0].totalDmKgHead, 950);
 assertClose(mismatchedCalendarFeed.penDaysUsed, 6_725 * 95);
 
 const effluentReference = {
+  // Recuperação integral explicitamente informada apenas nesta fixture.
+  agronomicAvailabilityPercent: 100,
+  avoidedFertilizerBudgetHa: 30000,
   referenceAreaHa: 50,
   referenceDepthMm: 150,
   referenceAnnualHeads: 6_725,
@@ -1215,6 +1218,7 @@ assertClose(
 assertClose(cropDirectCostHa(cornOverrun), 5_850);
 
 const weeklyFeed = calculateWeeklyFeedPlan({
+  openingSilageDmKg: 1400,
   lots: [
     {
       id: 'lot',
@@ -1251,7 +1255,7 @@ const soyCash = calculateMonthlyCashFlow(
     100,
   ),
 );
-assertClose(soyCash.peakFundingNeed, cropDirectCostHa(soyBudget) + 100);
+assertClose(soyCash.peakFundingNeed, cropDirectCostHa(soyBudget) + soyBudget.fixedCostHa + 100);
 assertClose(soyCash.endingCash, calculateCrop(soyBudget, 1, 100).margin);
 assert.equal(soyCash.peakFundingMonth, '2026-11');
 

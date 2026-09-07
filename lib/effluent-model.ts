@@ -15,6 +15,11 @@ export type EffluentScaleInputs = {
   valueSource: string;
   valueDate: string;
   creditConfirmed: boolean;
+  agronomicAvailabilityPercent?: number;
+  avoidedFertilizerBudgetHa?: number;
+  treatmentCostM3?: number;
+  applicationCostM3?: number;
+  annualFixedOperatingCost?: number;
   /** Destino local informado pelo usuário para o volume que não cabe na área-alvo. */
   excessDestination: string;
   /** Capacidade anual validada da rota informada, no mesmo denominador do excedente. */
@@ -146,6 +151,12 @@ export function calculateEffluentScale(input: EffluentScaleInputs) {
       excessDestinationCapacityM3 + 1e-6 >= volumeExcessM3 &&
       input.excessDestinationConfirmed);
   const grossPotentialCredit = appliedVolumeM3 * valueM3;
+  const fertilizerCap = appliedAreaHa * nonNegative(input.avoidedFertilizerBudgetHa ?? 0);
+  const avoidedFertilizerCost = Math.min(fertilizerCap, grossPotentialCredit *
+    Math.min(100, nonNegative(input.agronomicAvailabilityPercent ?? 0)) / 100);
+  const operatingCost = availableVolumeM3 * nonNegative(input.treatmentCostM3 ?? 0) +
+    appliedVolumeM3 * nonNegative(input.applicationCostM3 ?? 0) + nonNegative(input.annualFixedOperatingCost ?? 0);
+  const netPotentialCredit = avoidedFertilizerCost - operatingCost;
   const creditReady =
     input.creditConfirmed &&
     calibrationReady &&
@@ -154,9 +165,10 @@ export function calculateEffluentScale(input: EffluentScaleInputs) {
     targetDepthMm > 0 &&
     provenanceReady &&
     excessDestinationReady;
-  const includedCredit = creditReady ? grossPotentialCredit : 0;
+  const includedCredit = creditReady ? netPotentialCredit : 0;
 
   const blockers: string[] = [];
+  if (fertilizerCap <= 0) blockers.push('Sem orçamento de fertilizante efetivamente substituível: benefício econômico igual a zero, custos de operação preservados quando ativados.');
   if (referenceAreaHa <= 0 || referenceDepthMm <= 0) {
     blockers.push('Informe área e lâmina do módulo de referência.');
   }
@@ -253,6 +265,10 @@ export function calculateEffluentScale(input: EffluentScaleInputs) {
     excessDestinationCapacityM3,
     excessDestinationReady,
     grossPotentialCredit,
+    fertilizerCap,
+    avoidedFertilizerCost,
+    operatingCost,
+    netPotentialCredit,
     creditReady,
     includedCredit,
     blockers,

@@ -27,7 +27,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:model
       - run: pnpm test:regression
+      - run: pnpm test:decision
+      - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm test:render
       - name: Recuperar último conjunto de preços
         uses: actions/cache@v4
         with:

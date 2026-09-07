@@ -1,3 +1,4 @@
+import { solvePackingLp } from './allocation-model.ts';
 export type DecisionCriterion = 'base' | 'defensive' | 'balanced';
 
 export type ScenarioMargins = {
@@ -11,6 +12,7 @@ export type StrategyActivity = {
   label: string;
   margins: ScenarioMargins;
   cashCostHa: number;
+  maxAreaHa?: number;
 };
 
 export type StrategyAllocationInput = {
@@ -82,7 +84,7 @@ export function allocateStrategy(input: StrategyAllocationInput) {
       Object.values(activity.margins).every(Number.isFinite),
   );
   const count = activities.length;
-  const caps = activities.map(() => totalArea * maxShare);
+  const caps = activities.map((activity) => Math.max(0, Math.min(totalArea * maxShare, activity.maxAreaHa ?? totalArea)));
   const rawCosts = activities.map((activity) => activity.cashCostHa);
   const costs = rawCosts.map((cost) => Math.max(0, cost - idleCashCostHa));
   const capitalForActivities =
@@ -190,6 +192,20 @@ export function allocateStrategy(input: StrategyAllocationInput) {
     }
   }
 
+  if (input.criterion === 'defensive' && capitalForActivities >= 0 && count > 0) {
+    const bands = ['low', 'base', 'high'] as const;
+    const floor = totalArea * Math.min(0, ...bands.map((b) => idleMargins[b]),
+      ...activities.flatMap((a) => bands.map((b) => a.margins[b])));
+    const solution = solvePackingLp([...activities.map(() => 0), 1], [
+      { coefficients: [...activities.map(() => 1), 0], limit: totalArea },
+      { coefficients: [...costs, 0], limit: capitalForActivities },
+      ...activities.map((_, i) => ({ coefficients: [...activities.map((__, j) => Number(i === j)), 0], limit: caps[i] })),
+      ...bands.map((b) => ({ coefficients: [...activities.map((a) => idleMargins[b] - a.margins[b]), 1], limit: totalArea * idleMargins[b] - floor })),
+    ]);
+    const values = solution.values.slice(0, count);
+    if (isFeasible(values, caps, costs, totalArea, capitalForActivities)) bestValues = values;
+  }
+
   const rows = activities
     .map<StrategyAllocationRow>((activity, index) => {
       const area = bestValues[index] ?? 0;
@@ -233,9 +249,25 @@ export function allocateStrategy(input: StrategyAllocationInput) {
     capitalShortfall: Math.max(0, cashUsed - capitalLimit),
     capitalFeasible: cashUsed <= capitalLimit + 0.01,
     scenarioTotals,
-    objective: bestObjective,
-    criterionMarginHa: totalArea > 0 ? bestObjective / totalArea : 0,
+    objective: criterionMargin(scenarioTotals, input.criterion),
+    criterionMarginHa: totalArea > 0 ? criterionMargin(scenarioTotals, input.criterion) / totalArea : 0,
     idleMargins,
     idleCashCostHa,
   };
+}
+
+/** Cada hectare pertence a um módulo exclusivo; CAPEX indivisível é cobrado uma vez. */
+export function allocateEnterpriseStrategy(input: StrategyAllocationInput & {
+  commonFixedCapital: number; feedlotFixedCapital: number;
+}) {
+  const candidates = [false, true].map((withFeedlot) => {
+    const fixed = Math.max(0, input.commonFixedCapital) + (withFeedlot ? Math.max(0, input.feedlotFixedCapital) : 0);
+    const result = allocateStrategy({ ...input, capitalLimit: Math.max(0, input.capitalLimit - fixed),
+      activities: input.activities.filter((a) => withFeedlot || a.id !== 'cattle-a') });
+    const cashUsed = result.cashUsed + fixed;
+    return { ...result, fixedCapital: fixed, withFeedlot, cashUsed,
+      capitalSlack: Math.max(0, input.capitalLimit - cashUsed), capitalShortfall: Math.max(0, cashUsed - input.capitalLimit),
+      capitalFeasible: result.capitalFeasible && cashUsed <= input.capitalLimit + 0.01 };
+  });
+  return candidates.sort((a, b) => Number(b.capitalFeasible) - Number(a.capitalFeasible) || b.objective - a.objective || a.cashUsed - b.cashUsed)[0];
 }

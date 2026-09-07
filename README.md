@@ -24,16 +24,22 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 6. Use **Salvar no navegador** e **Restaurar salvo** para guardar um cenário no dispositivo. Não há salvamento automático: salve novamente depois das alterações.
 7. **Baixar cenário** e **Abrir cenário** compartilham premissas em JSON versionado. Confirmações operacionais são renovadas ao importar.
 8. A aba de relatório exporta CSV e permite impressão. O JSON restaura o cenário; o CSV documenta resultados.
+9. Abra **Conferir margem** para reconciliar a referência histórica, comparar primeiro ano com regime pleno, informar reserva/implantação e verificar os requisitos físicos.
+10. Em **Conferir margem → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
+11. A tela rápida destaca a maior margem entre alternativas que cabem no capital estimado. **Estratégia** calcula um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
 
 ## O que os números representam
 
 - A tela rápida é uma comparação nominal de **ano em regime pleno**, não um orçamento de implantação nem garantia de retorno.
-- A margem/ha usa a área-base total. Hectares de milho adicional são identificados na integração.
+- A margem/ha usa a área-base total, incluindo silagem. Na comparação rápida, A usa silagem própria e milho comprado; o preço entregue do milho fica na alocação. Hectares de milho próprio adicional e sua oportunidade de venda são identificados na integração avançada.
 - A análise datada e o alocador têm critérios próprios de mercado, disponibilidade, capacidade e oportunidade do alimento.
 - A dieta manual funciona na comparação rápida e na projeção individual. A alocação integrada de alimento próprio usa custos por ingrediente e custo de oportunidade; não recebe selo de validação sob dieta manual.
 - A oferta anual de alimento não prova disponibilidade no dia de uso. Compras adicionais antes da safra são mostradas e impedem a validação operacional até conciliação econômica.
 - Calendário agronômico-base: **Barra/BA**. Escolher outra UF para preços não altera clima, janela, vazio sanitário ou licenças.
-- O efluente é hipótese de crédito bruto, condicionada a volume, análise, eficiência e requisitos. Não é economia líquida comprovada.
+- O efluente mostra bruto, benefício limitado ao adubo substituível, custos e líquido hipotético. Disponibilidade e orçamento não informados não geram benefício. Continua sujeito a medição, análise química, projeto e requisitos locais.
+- Fixos agrícolas são R$/ha/safra, independentes do preço da commodity. No editor de custos, estresse altera o orçamento; classificação redistribui o agregado existente.
+- O primeiro ano usa coortes diárias equivalentes, aquisição de animais, implantação e custeio datado. Animais não vendidos não viram receita. É um plano financeiro simplificado, não programação executiva dos lotes.
+- O mix defensivo maximiza o pior resultado do portfólio conjunto. Não atribui probabilidades aos cenários nem supõe vendas e consumo simultâneo do mesmo milho.
 - Curvas futuras e notícias não são um feed automático em tempo real. Cotações futuras não garantem o preço de venda.
 - Os custos iniciais são bases anonimizadas/hipóteses editáveis; não são cotações atuais de fornecedores.
 
@@ -45,6 +51,8 @@ Requer Node 22.13+ e pnpm. Dependências travadas em pnpm-lock.yaml.
 pnpm install --frozen-lockfile
 pnpm test:model
 pnpm test:regression
+pnpm test:decision
+pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit
 pnpm build:pages
@@ -81,3 +89,5 @@ O repositório não concede licença ampla de reutilização do código por padr
 - [OWASP — proteção contra fórmulas em CSV](https://owasp.org/www-community/attacks/CSV_Injection)
 
 Veja [a auditoria desta versão](docs/AUDITORIA_PUBLICA_2026-09-06.md) para correções e limitações.
+
+Veja [o guia da versão 2026-09-06.2](docs/DECISAO_2026-09-06.2.md) para memória da referência, funcionalidades novas e pendências priorizadas.

@@ -13,6 +13,9 @@ export type AutomaticCropCalendar = {
   cycleDays: number;
   waitingDays: number;
   completedWithinHorizon: boolean;
+  sanitaryFit: boolean;
+  sanitaryDeadline: string;
+  operationalReady: boolean;
   legalWindow: string;
   sanitaryVoid: string;
   legalBasis: 'official-2026-27' | 'projected-repeat' | 'not-applicable';
@@ -137,11 +140,16 @@ function buildCrop(
   cycleSourceUrl: string,
 ): AutomaticCropCalendar {
   const harvestDate = addDays(plantDate, cycleDays);
+  const seasonYear = Number(plantDate.slice(0, 4)) + (plantDate.slice(5) >= '11-01' ? 1 : 0);
+  const sanitaryDeadline = id === 'cotton-irrigated' ? `${seasonYear}-08-31`
+    : id === 'soy-irrigated' ? `${seasonYear}-07-31` : '';
+  const sanitaryFit = !sanitaryDeadline || harvestDate <= sanitaryDeadline;
   const completedWithinHorizon = Boolean(
     harvestDate && harvestDate <= horizonEndDate,
   );
-  const availableDate = completedWithinHorizon ? harvestDate : '';
-  const lastDeliveryDate = completedWithinHorizon
+  const operationalReady = completedWithinHorizon && sanitaryFit;
+  const availableDate = operationalReady ? harvestDate : '';
+  const lastDeliveryDate = operationalReady
     ? minIso(addDays(harvestDate, 90), horizonEndDate)
     : '';
 
@@ -155,11 +163,14 @@ function buildCrop(
     cycleDays,
     waitingDays: daysBetween(anchorDate, plantDate),
     completedWithinHorizon,
+    sanitaryFit,
+    sanitaryDeadline,
+    operationalReady,
     legalWindow,
     sanitaryVoid,
     legalBasis,
     legalAct,
-    legalNote,
+    legalNote: legalNote + (!sanitaryFit ? ` Conflito: colheita em ${harvestDate} ultrapassa ${sanitaryDeadline}, limite do calendário sanitário cadastrado. Rever ciclo/plantio com responsável técnico; não encurtamos o ciclo automaticamente.` : ''),
     cycleBasis,
     rulesCheckedAt: RULES_CHECKED_AT,
     officialRegistryUrl,
@@ -256,7 +267,7 @@ export function buildAutomaticCalendar(
   const transitionDays = 5;
   const doubleCornPlantDate = addDays(doubleSoyHarvestDate, transitionDays);
   const doubleCornHarvestDate = addDays(doubleCornPlantDate, corn.cycleDays);
-  const doubleCompleted = doubleCornHarvestDate <= horizonEndDate;
+  const doubleCompleted = doubleCornHarvestDate <= horizonEndDate && soy.sanitaryFit;
 
   return {
     anchorDate,

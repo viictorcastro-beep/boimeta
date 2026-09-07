@@ -76,6 +76,8 @@ export type WeeklyFeedPlanInput = {
   grainProducedSacks: number;
   ownGrainAllocatedSacks: number;
   ownSilageAllocatedDmKg: number;
+  openingSilageDmKg?: number;
+  silageReceipts?: { date: string; dmKg: number }[];
   grainReceiptDate: string;
   allowPurchases: boolean;
 };
@@ -89,6 +91,7 @@ export type WeeklyFeedRow = {
   grainShortageSacks: number;
   grainEndingSacks: number;
   silageConsumptionDmKg: number;
+  silageReceiptDmKg: number;
   silagePurchaseDmKg: number;
   silageShortageDmKg: number;
   silageEndingDmKg: number;
@@ -145,7 +148,7 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
     (maximum, lot) => ((lot.exitDate ?? '') > maximum ? lot.exitDate ?? '' : maximum),
     calendarLots[0].exitDate ?? '',
   );
-  const finalDate =
+  const grainFinalDate =
     parseIso(input.grainReceiptDate) && input.grainReceiptDate > lastExit
       ? input.grainReceiptDate
       : lastExit;
@@ -153,7 +156,16 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
     Math.max(0, input.grainProducedSacks),
     Math.max(0, input.ownGrainAllocatedSacks),
   );
-  const openingSilageDmKg = Math.max(0, input.ownSilageAllocatedDmKg);
+  let remainingSilage = Math.max(0, input.ownSilageAllocatedDmKg);
+  const receipts = (input.silageReceipts ?? []).filter((r) => parseIso(r.date) && Number.isFinite(r.dmKg) && r.dmKg > 0)
+    .sort((a, b) => a.date.localeCompare(b.date)).map((r) => {
+      const dmKg = Math.min(r.dmKg, remainingSilage);
+      remainingSilage -= dmKg;
+      return { ...r, dmKg };
+    });
+  const finalDate = receipts.reduce((end, r) => r.date > end ? r.date : end, grainFinalDate);
+  const openingSilageDmKg = Math.max(0, input.openingSilageDmKg ?? 0) +
+    receipts.filter((r) => r.date < firstEntry).reduce((sum, r) => sum + r.dmKg, 0);
   const openingGrainSacks = parseIso(input.grainReceiptDate) && input.grainReceiptDate < firstEntry
     ? ownGrainReceipt : 0;
   let grainStock = openingGrainSacks;
@@ -172,6 +184,7 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
     let grainReceiptSacks = 0;
     let grainConsumptionSacks = 0;
     let silageConsumptionDmKg = 0;
+    let silageReceiptDmKg = 0;
     let totalDmConsumptionKg = 0;
     let grainPurchaseSacks = 0;
     let grainShortageSacks = 0;
@@ -188,6 +201,10 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
     if (dailyReceipt > 0) grainReceiptApplied = true;
     grainStock += dailyReceipt;
     grainReceiptSacks += dailyReceipt;
+    const dailySilageReceipt = receipts.filter((r) => r.date === day).reduce((sum, r) => sum + r.dmKg, 0);
+    silageStock += dailySilageReceipt;
+    silageReceiptDmKg += dailySilageReceipt;
+    peakSilageStockDmKg = Math.max(peakSilageStockDmKg, silageStock);
     peakGrainStockSacks = Math.max(peakGrainStockSacks, grainStock);
 
     let dailyGrain = 0;
@@ -241,6 +258,7 @@ export function calculateWeeklyFeedPlan(input: WeeklyFeedPlanInput) {
       grainShortageSacks,
       grainEndingSacks: grainStock,
       silageConsumptionDmKg,
+      silageReceiptDmKg,
       silagePurchaseDmKg,
       silageShortageDmKg,
       silageEndingDmKg: silageStock,
@@ -300,13 +318,13 @@ export function cropCashEvents(
       label: `${crop.shortName} · custeio direto${includeLandLease && landLeaseHa > 0 ? ' + terra' : ''}`,
       inflow: 0,
       outflow:
-        (result.directCostHa + (includeLandLease ? landLeaseHa : 0)) * areaHa,
+        (result.directCostHa + result.fixedCostHa + (includeLandLease ? landLeaseHa : 0)) * areaHa,
     },
     {
       date: harvestDate,
       label: `${crop.shortName} · venda bruta`,
       inflow: result.revenue,
-      outflow: (result.deductionsHa + result.fixedCostHa) * areaHa,
+      outflow: result.deductionsHa * areaHa,
     },
   ];
   return events;

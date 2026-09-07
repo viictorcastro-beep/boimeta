@@ -50,10 +50,11 @@ export type FeedAllocationInputs = {
   annualCandidates: number;
   entryWeight: number;
   saleWeight: number;
-  netFinishedRevenueByGmd: (gmd: number) => number | null;
+  netFinishedRevenueByGmd: (gmd: number, lot?: LotProfile) => number | null;
   sellNowHead: number;
   dietDmDay: number;
   forageShare: number;
+  otherIngredientSharePercent?: number;
   silageCashCostDm: number;
   silageOpportunityCostDm: number;
   purchasedSilageCostDm: number;
@@ -356,11 +357,12 @@ function lotEconomics(
   const totalDmKgHead = dailyDmKg * days;
   const forageFraction = clampRate(input.forageShare);
   const silageDmKgHead = totalDmKgHead * forageFraction;
-  const grainDmKgHead = totalDmKgHead - silageDmKgHead;
+  const otherDmKgHead = totalDmKgHead * clampRate(input.otherIngredientSharePercent ?? 0);
+  const grainDmKgHead = Math.max(0, totalDmKgHead - silageDmKgHead - otherDmKgHead);
   const grainSacksHead = grainDmKgHead / (60 * 0.88);
   const grainOpportunityCostDm =
     costBasis?.grainDm ?? input.grainNetSalePriceSack / (60 * 0.88);
-  const projectedFinishedRevenue = input.netFinishedRevenueByGmd(lot.gmd);
+  const projectedFinishedRevenue = input.netFinishedRevenueByGmd(lot.gmd, lot);
   const routeCovered =
     projectedFinishedRevenue !== null &&
     Number.isFinite(projectedFinishedRevenue) &&
@@ -480,7 +482,7 @@ function thresholdGmd(
  * A joint optimisation is required: a greedy route order can waste a scarce
  * cocho or boitel slot on a lot whose alternative has greater value.
  */
-function solvePackingLp(
+export function solvePackingLp(
   objective: number[],
   constraints: Array<{ coefficients: number[]; limit: number }>,
 ) {
@@ -557,7 +559,8 @@ function solvePackingLp(
 export function calculateFeedAllocation(input: FeedAllocationInputs) {
   // Keep direct callers and older saved scenarios operational: cocho own is
   // enabled unless explicitly turned off; boitel remains opt-in.
-  const ownFeedlotEnabled = input.allowOwnFeedlot !== false;
+  const ownFeedlotEnabled = input.allowOwnFeedlot !== false && input.forageShare >= 0 &&
+    (input.otherIngredientSharePercent ?? 0) >= 0 && input.forageShare + (input.otherIngredientSharePercent ?? 0) <= 100;
   const outsourceEnabled = input.allowOutsource === true;
   const shareTotal = input.lots.reduce(
     (sum, lot) => sum + Math.max(0, lot.share),
@@ -667,7 +670,7 @@ export function calculateFeedAllocation(input: FeedAllocationInputs) {
             },
           );
           const grainDmKgHead = economics.totalDmKgHead *
-            (1 - clampRate(input.forageShare));
+            Math.max(0, 1 - clampRate(input.forageShare) - clampRate(input.otherIngredientSharePercent ?? 0));
           variables.push({
             lotId: baseLot.id,
             kind: 'own',
@@ -1024,6 +1027,13 @@ export function calculateFeedAllocation(input: FeedAllocationInputs) {
     0,
   );
 
+  // Decisões marginais permanecem em VP; a conta anual usa os fluxos nominais.
+  const routeRevenueNominal = lots.reduce((sum, lot) => sum +
+    (lot.ownHeads + lot.outsourceHeads) * (lot.netFinishedRevenue ?? 0) + lot.sellHeads * lot.sellNowHead, 0);
+  const routeCostNominal = lots.reduce((sum, lot) => sum +
+    (lot.ownHeads * lot.presentOwnCost + lot.outsourceHeads * lot.presentOutsourceCost) *
+    (1 + Math.max(0, input.annualCarryRate / 100)) ** (lot.days / 730), 0);
+
   return {
     lots,
     ownHeads,
@@ -1047,6 +1057,9 @@ export function calculateFeedAllocation(input: FeedAllocationInputs) {
     totalIncrementalMargin,
     routeRevenuePresentValue,
     routeCostPresentValue,
+    routeRevenueNominal,
+    routeCostNominal,
+    ownSilageTransferNominal: ownSilageUsedDmKg * input.silageOpportunityCostDm,
     thresholdOwnVsSell: thresholdGmd(
       input,
       (lot) => lot.ownMarginHead,

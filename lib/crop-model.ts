@@ -17,6 +17,8 @@ export type CropAssumption = {
   costItems: CropCostItem[];
   deductionRate: number;
   fixedRate: number;
+  // Valor por hectare/safra. fixedRate é mantido apenas para importar versões antigas.
+  fixedCostHa?: number;
   source: string;
   note: string;
 };
@@ -56,6 +58,7 @@ export const cropDefaults: CropAssumption[] = [
     ],
     deductionRate: 0.2,
     fixedRate: 10,
+    fixedCostHa: 1000,
     source: 'Planilha local anonimizada — Unidade A',
     note: 'Produtividade assumida no cenário-base; o custo fornecido inclui R$ 513/ha de irrigação e R$ 28/ha de consultoria.',
   },
@@ -79,6 +82,7 @@ export const cropDefaults: CropAssumption[] = [
     ],
     deductionRate: 0.2,
     fixedRate: 10,
+    fixedCostHa: 1100,
     source: 'Plano produtivo local anonimizado — Unidade B',
     note: 'O custeio de R$ 4.800/ha foi aberto com saldo não classificado. Ao preencher sementes, fertilizantes, defensivos, operações ou colheita, esse saldo cai na mesma proporção e o total não duplica. A base histórica cruzada contém somente custo direto total de R$ 6.528,60/ha, sem decomposição.',
   },
@@ -109,6 +113,7 @@ export const cropDefaults: CropAssumption[] = [
     ],
     deductionRate: 1.5,
     fixedRate: 10,
+    fixedCostHa: 1946.12592,
     source: 'Planilha local anonimizada — Unidade A',
     note: 'A recomposição inclui irrigação e consultoria fora do subtotal original; o preço equivalente combina pluma e caroço.',
   },
@@ -122,9 +127,10 @@ export function updateCropCostItem(
   crop: CropAssumption,
   costId: string,
   value: number,
+  mode: 'classify' | 'stress' = 'classify',
 ) {
   const normalizedValue = Math.max(0, value);
-  if (crop.id !== 'corn-irrigated' || !CORN_DETAIL_COST_IDS.includes(costId as (typeof CORN_DETAIL_COST_IDS)[number])) {
+  if (mode === 'stress' || crop.id !== 'corn-irrigated' || !CORN_DETAIL_COST_IDS.includes(costId as (typeof CORN_DETAIL_COST_IDS)[number])) {
     return {
       ...crop,
       costItems: crop.costItems.map((item) =>
@@ -133,10 +139,7 @@ export function updateCropCostItem(
     };
   }
 
-  const detailedSubtotal = crop.costItems.reduce((sum, item) => {
-    if (!CORN_DETAIL_COST_IDS.includes(item.id as (typeof CORN_DETAIL_COST_IDS)[number])) return sum;
-    return sum + (item.id === costId ? normalizedValue : item.value);
-  }, 0);
+  const oldValue = crop.costItems.find((item) => item.id === costId)?.value ?? 0;
   return {
     ...crop,
     costItems: crop.costItems.map((item) => {
@@ -144,7 +147,7 @@ export function updateCropCostItem(
       if (item.id === 'unallocated') {
         return {
           ...item,
-          value: Math.max(0, CORN_UNALLOCATED_BUDGET_HA - detailedSubtotal),
+          value: Math.max(0, item.value - (normalizedValue - oldValue)),
         };
       }
       return item;
@@ -160,17 +163,17 @@ export function calculateCrop(
   const directCostHa = cropDirectCostHa(crop);
   const revenueHa = crop.yield * crop.price;
   const deductionsHa = revenueHa * (crop.deductionRate / 100);
-  const fixedCostHa = revenueHa * (crop.fixedRate / 100);
+  const fixedCostHa = cropFixedCostHa(crop);
   const totalCostHa = directCostHa + deductionsHa + fixedCostHa + landLeaseHa;
   const marginHa = revenueHa - totalCostHa;
   const revenue = revenueHa * area;
   const totalCost = totalCostHa * area;
   const margin = marginHa * area;
   const roi = totalCost > 0 ? (margin / totalCost) * 100 : 0;
-  const retainedRevenueRate = 1 - (crop.deductionRate + crop.fixedRate) / 100;
+  const retainedRevenueRate = 1 - crop.deductionRate / 100;
   const breakEvenPrice =
     crop.yield > 0 && retainedRevenueRate > 0
-      ? (directCostHa + landLeaseHa) / (crop.yield * retainedRevenueRate)
+      ? (directCostHa + fixedCostHa + landLeaseHa) / (crop.yield * retainedRevenueRate)
       : null;
 
   return {
@@ -189,7 +192,20 @@ export function calculateCrop(
     margin,
     roi,
     breakEvenPrice,
+    breakEvenYield: crop.price > 0 && retainedRevenueRate > 0
+      ? (directCostHa + fixedCostHa + landLeaseHa) / (crop.price * retainedRevenueRate) : null,
   };
+}
+
+export function cropFixedCostHa(crop: CropAssumption) {
+  const reference = cropDefaults.find((item) => item.id === crop.id);
+  return Math.max(0, crop.fixedCostHa ??
+    ((reference?.price ?? crop.price) * (reference?.yield ?? crop.yield) * crop.fixedRate / 100));
+}
+
+/** Receita alternativa: somente descontos de venda evitáveis, nunca fixos já incorridos. */
+export function cropNetSalePrice(crop: CropAssumption) {
+  return Math.max(0, crop.price * (1 - crop.deductionRate / 100));
 }
 
 export function calculateDoubleCrop(

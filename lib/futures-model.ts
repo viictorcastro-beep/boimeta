@@ -1,5 +1,13 @@
 export type FutureProduct = 'cattle' | 'corn' | 'soy' | 'cotton';
 
+export function integerHedgeCoverage(quantity: number, requestedPercent: number, contractSize: number) {
+  const valid = Number.isFinite(quantity) && quantity >= 0 && Number.isFinite(requestedPercent) && Number.isFinite(contractSize) && contractSize > 0;
+  const contracts = valid ? Math.floor(quantity * Math.max(0, Math.min(100, requestedPercent)) / 100 / contractSize) : 0;
+  const coveredQuantity = contracts * (valid ? contractSize : 0);
+  return { valid, contracts, coveredQuantity, uncoveredQuantity: valid ? quantity - coveredQuantity : 0,
+    fraction: valid && quantity > 0 ? coveredQuantity / quantity : 0 };
+}
+
 export type FutureUnit =
   | 'BRL_ARROBA'
   | 'BRL_SACK_60KG'
