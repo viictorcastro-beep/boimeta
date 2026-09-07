@@ -12,7 +12,7 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 - Após a primeira carga completa, o aplicativo e as referências datadas ficam disponíveis offline. Preços não se atualizam sem conexão; as datas originais são preservadas.
 - Uma nova versão avisa antes de recarregar. **Salve o cenário antes de atualizar.** O armazenamento é local ao navegador, sem sincronização automática entre dispositivos.
 - As tabelas extensas têm rolagem própria; zoom, teclado e redução de movimento permanecem disponíveis.
-- Responsividade implementada por breakpoints; não há certificação em todos os hardwares nem teste manual em dispositivos nesta rodada.
+- Navegação e edição foram testadas em navegador com larguras estreitas, intermediárias e amplas. Isso não equivale a certificação em todos os hardwares ou teste em celulares físicos.
 
 ## Como utilizar
 
@@ -30,6 +30,8 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 11. A tela rápida destaca a maior margem entre alternativas que cabem no capital estimado. **Estratégia** calcula um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
 12. Compare **A: recria + cocho**, **B: ciclo no pivô** e **C: recria e venda do magro**. Informe o preço líquido local do magro; não é a cotação da arroba de boi gordo. O GMD de recria A/C e o do ciclo B têm controles separados.
 13. Valores usam português brasileiro: `30.000.000`, `1.234,56`, `0,78`. É possível colar `R$ 1.234,56`. Um campo vazio não zera silenciosamente a premissa; use vírgula decimal, Enter para concluir ou as setas para incrementar.
+14. Em **Premissas & caixa → Alimentos, pasto e água**, informe produção de MS e aproveitamento. Esses dados limitam A/B/C; a distribuição mensal limita o fluxo contínuo pelo mês mais restritivo. Não há carregamento automático de sobra de capim entre meses.
+15. O capital A/B cobre a esteira até a primeira venda e a reserva de custeio do ciclo. O mix separa essa reserva do custo anual usado para calcular margem; adiar a entrada não faz despesas futuras desaparecerem.
 
 ## O que os números representam
 
@@ -44,12 +46,15 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 - O primeiro ano usa coortes diárias equivalentes, aquisição de animais, implantação e custeio datado. Animais não vendidos não viram receita. É um plano financeiro simplificado, não programação executiva dos lotes.
 - O mix defensivo maximiza o pior resultado do portfólio conjunto. Não atribui probabilidades aos cenários nem supõe vendas e consumo simultâneo do mesmo milho.
 - Notícias oficiais IBGE de abate/safra são coletadas em dias úteis, com data da publicação e da coleta. Não são interpretadas automaticamente como variação de preço. Curvas futuras ainda não têm feed automático validado e não garantem preço de venda.
-- Recria C usa toda a área, reposição 100% comprada, venda líquida por kg vivo e mortalidade de referência de 0,2%. Não inclui silagem, confinamento, matrizes, vacas ou efluente. O capital é o maior entre pico datado e reserva para completar uma ocupação do pasto, acrescido da reserva livre; não diminui artificialmente ao adiar a entrada.
+- Recria C usa toda a área, reposição 100% comprada, venda líquida por kg vivo e a mortalidade de pasto editada no cenário (base: 0,2%). A usa também a mortalidade do cocho. Perdas são modeladas ao fim de cada fase; mortos no pasto não consomem confinamento. C não inclui silagem, confinamento, matrizes, vacas ou efluente.
+- Capital é reserva de recursos, não uma nova despesa deduzida da margem. A/B usam o maior entre pico datado, custeio de uma ocupação e caixa antes da primeira venda da esteira, mais CAPEX, preparação e reserva livre; C cobre sua ocupação até a venda.
 - VPL exibido no painel de investimento é **incremental A menos B**, com regime pleno e preços constantes. Não é VPL da aquisição da fazenda. Pesos/GMD inválidos exigem correção antes de emitir esse parecer.
 - Foco em exportação não acrescenta prêmio. Peso/acabamento não certificam “boi-China”; documentação, sanidade, requisitos vigentes e comprador precisam ser verificados.
 - Os custos iniciais são bases anonimizadas/hipóteses editáveis; não são cotações atuais de fornecedores.
 
 ## Desenvolvimento
+
+Registro da rodada: [auditoria de prioridades · 2026-09-07.1](docs/PRIORIDADES_2026-09-07.1.md).
 
 Requer Node 22.13+ e pnpm. Dependências travadas em pnpm-lock.yaml.
 

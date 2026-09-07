@@ -170,14 +170,15 @@ const a = {
 test('gargalo reproduz margens do motor', () => {
   const c = calculateCore(a),
     d = capacityActions(a, 65);
-  assert.ok(Math.abs(c.ebitdaA - 6207640.95) < 1);
+  // Perdas de referência ao fim do pasto; mortos não consomem cocho.
+  assert.ok(Math.abs(c.ebitdaA - 6252035.64) < 1);
   assert.ok(Math.abs(c.ebitdaB - 9890615.08) < 1);
   assert.equal(d.neededCapacity, 2667);
-  assert.ok(Math.abs(d.expandedVersusB - 43904.42) < 1);
+  assert.ok(Math.abs(d.expandedVersusB - 103087.40) < 1);
 });
 test('indiferença do milho fecha A=B sem alterar entrada', () => {
   const d = capacityActions(a, 65);
-  assert.ok(d.cornIndifference > 16 && d.cornIndifference < 17);
+  assert.ok(d.cornIndifference > 17 && d.cornIndifference < 18);
   const b = calculateCore({
     ...a,
     dietPriceDm: a.dietPriceDm + ((d.cornIndifference - 65) * 0.55) / 52.8,
@@ -210,7 +211,7 @@ test('GMD zero não calcula falso equilíbrio', () =>
   ));
 test('potencial de sobra não gera receita', () => {
   const d = capacityActions(a, 65);
-  assert.ok(d.unusedFlowArea > 139 && d.unusedFlowArea < 140);
+  assert.ok(Math.abs(d.unusedFlowArea - 138.7651) < .01);
   assert.ok(d.unusedRearingPotential > 0);
   assert.equal('surplusRevenue' in d, false);
 });

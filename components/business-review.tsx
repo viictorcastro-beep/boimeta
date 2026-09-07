@@ -114,7 +114,7 @@ export function BusinessReview(p: Props) {
           ? 'com data-base informada ' + p.gateSourceDate
           : 'sem cotação local datada'}
         . A cotação do boi gordo não atualiza o magro. Reposição C integralmente
-        comprada; mortalidade de referência 0,2%, custeada até o fim da fase.
+        comprada; mortalidade aplicada de {n(p.a.pastureMortalityPercent ?? 0.2)}%, custeada até o fim da fase.
       </p>
       {!investmentValid ? (
         <p className="mt-5 rounded-xl border bg-[#fff8e9] p-4 text-sm">
@@ -128,7 +128,7 @@ export function BusinessReview(p: Props) {
           <h3 className="font-semibold">
             O investimento adicional em A paga a diferença para B?
           </h3>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-4">
             <div>
               <p className="text-sm">Margem anual A − B</p>
               <strong className="font-mono text-xl">

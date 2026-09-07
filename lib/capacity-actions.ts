@@ -11,9 +11,10 @@ export function capacityActions(a: Assumptions, cornDeliveredPrice: number) {
   const neededCapacity =
     current.routeAInputValid &&
     utilization > 0 &&
+    current.feedlotSurvival > 0 &&
     Number.isFinite(foodPotential)
       ? Math.ceil(
-          ((foodPotential / current.survival) * current.daysFeedlot) /
+          ((foodPotential / current.feedlotSurvival) * current.daysFeedlot) /
             365 /
             utilization,
         )
@@ -26,12 +27,12 @@ export function capacityActions(a: Assumptions, cornDeliveredPrice: number) {
         })
       : null;
   const usedPasture =
-    current.pasturePotentialA > 0
-      ? (current.pastureAreaA * current.soldA) / current.pasturePotentialA
+    current.simultaneousPivotA * current.cyclesA > 0
+      ? (current.pastureAreaA * current.entrantsA) / (current.simultaneousPivotA * current.cyclesA)
       : 0;
   const usedSilage =
-    Number.isFinite(current.silagePotentialA) && current.silagePotentialA > 0
-      ? (current.silageArea * current.soldA) / current.silagePotentialA
+    current.silageProducedDm > 0
+      ? (current.silageArea * current.silageConsumedDm) / current.silageProducedDm
       : 0;
   const grainFraction = Math.max(
     0,
@@ -74,7 +75,7 @@ export function capacityActions(a: Assumptions, cornDeliveredPrice: number) {
     unusedFlowArea: Math.max(0, a.totalArea - usedPasture - usedSilage),
     unusedRearingPotential: Math.max(
       0,
-      current.pasturePotentialA - current.soldA,
+      current.pastureCandidatesA - current.feedlotEntriesA,
     ),
     expansionAnnualGain: expanded ? expanded.ebitdaA - current.ebitdaA : null,
     expandedVersusB: expanded ? expanded.ebitdaA - current.ebitdaB : null,

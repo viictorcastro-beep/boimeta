@@ -8,8 +8,9 @@ import {
   calculateMonthlyCashFlow,
   type CashEvent,
 } from './operational-model.ts';
+import { MONTH_DAYS } from './pasture-capacity.ts';
 
-export const REVIEW_VERSION = '2026-09-06.4';
+export const REVIEW_VERSION = '2026-09-07.1';
 export const reviewDefaults = {
   pastureYieldDmTonnesHa: 0,
   grazingEfficiencyPercent: 0,
@@ -56,6 +57,8 @@ export function referenceBridge(current: Assumptions) {
         'gmdPivotA',
         'gmdFeedlot',
         'gmdB',
+        'pastureMortalityPercent',
+        'feedlotMortalityPercent',
       ],
     },
     {
@@ -166,7 +169,6 @@ export function cattleStartupCash(
   const totalDays =
     route === 'A' ? core.daysPivotA + core.daysFeedlot : core.daysB;
   const sale = route === 'A' ? core.netSaleA : core.netSaleB;
-  const perSoldCost = route === 'A' ? core.cashCostHeadA : core.cashCostHeadB;
   const annualSilage = route === 'A' ? core.annualSilageCashCost : 0;
   const annualPasture =
     ((route === 'A'
@@ -177,7 +179,10 @@ export function cattleStartupCash(
   // Coortes diárias equivalentes: o giro anual pressupõe fluxo escalonado,
   // não que toda a lotação média de pasto entre no cocho no mesmo dia.
   const headsSoldBatch = soldAnnual / 365;
-  const headsBoughtBatch = headsSoldBatch / core.survival;
+  const headsBoughtBatch = (route === 'A' ? core.entrantsA : core.entrantsB) / 365;
+  const headsFeedlotBatch = route === 'A' ? core.feedlotEntriesA / 365 : 0;
+  const pastureDays = route === 'A' ? core.daysPivotA : core.daysB;
+  const components = route === 'A' ? core.costComponentsA : core.costComponentsB;
   const events: CashEvent[] = [
     {
       date: anchor,
@@ -198,24 +203,19 @@ export function cattleStartupCash(
   const dailyOut = Array<number>(365).fill(0);
   const dailyIn = Array<number>(365).fill(0);
   for (let entry = Math.ceil(Math.max(0, setupDays)); entry < 365; entry += 1) {
-    const acquisition = headsBoughtBatch * a.calfCost;
+    const acquisition = headsBoughtBatch * (a.calfCost + components.freightIn);
     boughtHeads += headsBoughtBatch;
     dailyOut[entry] += acquisition;
-    const cycleCost = Math.max(
-      0,
-      headsSoldBatch * perSoldCost -
-        acquisition -
-        (soldAnnual > 0
-          ? ((annualSilage + annualPasture) * headsSoldBatch) / soldAnnual
-          : 0),
-    );
-    for (let day = 0; day < totalDays && entry + day < 365; day += 1) {
-      dailyOut[entry + day] += cycleCost / totalDays;
+    for (let day = 0; day < Math.min(totalDays, 365 - entry); day += 1) {
+      dailyOut[entry + day] += day < pastureDays
+        ? headsBoughtBatch * (components.supplement + components.health) / pastureDays
+        : headsFeedlotBatch * core.feedlotVariableCostHead / core.daysFeedlot;
     }
     if (entry + totalDays < 365) {
       salesHeads += headsSoldBatch;
+      dailyOut[entry + totalDays] += headsSoldBatch * components.freightOut;
       dailyIn[entry + totalDays] += headsSoldBatch * sale;
-    } else closingHeads += headsSoldBatch;
+    } else closingHeads += route === 'A' && entry + pastureDays < 365 ? headsFeedlotBatch : headsBoughtBatch;
   }
   for (let day = 0; day < 365; day++) {
     if (dailyOut[day] > 0)
@@ -242,9 +242,36 @@ export function cattleStartupCash(
     boughtHeads,
     headsBoughtBatch,
     unrecognizedStockAtPurchaseCost: closingHeads * a.calfCost,
-    peakFeedlotHeads: route === 'A' ? headsBoughtBatch * core.daysFeedlot : 0,
+    peakFeedlotHeads: route === 'A' ? headsFeedlotBatch * core.daysFeedlot : 0,
     note: 'Hipótese: coortes diárias equivalentes (cabeças fracionárias), início sem animais, custeio diário e preços constantes. Agrupar em lotes reais exige conferir picos de capacidade. Estoque final não é venda; vacas/efluente não entram sem calendário. Não é lucro líquido nem cronograma executivo.',
   };
+}
+
+/** Reserva de uma ocupação de pasto até o recebimento da venda, incluindo
+ * fases que ultrapassem o ano 1. Não é despesa adicional à margem anual. */
+export function cattleCapitalRequirement(a: Assumptions, route: 'A' | 'B', datedPeak = 0, setupCost = 0, reserveCash = 0) {
+  const c = calculateCore(a);
+  const days = route === 'A' ? c.daysPivotA + c.daysFeedlot : c.daysB;
+  const firstOccupation = route === 'A' ? c.entrantsA * c.daysPivotA / 365 : c.entrantsB * c.daysB / 365;
+  const variableHead = route === 'A' ? c.preFeedlotCostHead + c.pastureSurvival * c.feedlotVariableCostHead : c.preSaleCostHeadB;
+  const areaBudget = (route === 'A' ? c.annualPastureOperatingA : c.annualPastureOperatingB) * a.otherCostFactor / 100 +
+    (route === 'A' ? c.annualSilageCashCost : 0) + c.landLeaseCost;
+  const cowReserve = route === 'A' ? c.cowsSold * c.cowCashCost : 0;
+  const occupationReserve = firstOccupation * variableHead + areaBudget * Math.max(1, days / 365);
+  // Caixa imediatamente antes da primeira venda da esteira diária: inclui
+  // a recompra do pasto enquanto os primeiros animais já estão no cocho.
+  // Soma fechada das coortes, sem simular milhares de dias a cada edição.
+  const pastureDays = route === 'A' ? c.daysPivotA : c.daysB;
+  const components = route === 'A' ? c.costComponentsA : c.costComponentsB;
+  const dailyBought = (route === 'A' ? c.entrantsA : c.entrantsB) / 365;
+  const dailySold = (route === 'A' ? c.soldA : c.soldB) / 365;
+  const beforeFirstReceipt = dailyBought * (days + 1) * (a.calfCost + components.freightIn) +
+    dailyBought * (components.supplement + components.health) * (days + 1 - (pastureDays - 1) / 2) +
+    (route === 'A' ? c.feedlotEntriesA / 365 * c.feedlotVariableCostHead * (c.daysFeedlot + 3) / 2 : 0) +
+    dailySold * components.freightOut + areaBudget * Math.max(1, (days + 1) / 365);
+  const fullCycleReserve = Math.max(occupationReserve, beforeFirstReceipt) +
+    cowReserve + a.pivotInvestment + (route === 'A' ? a.investment : 0) + setupCost;
+  return { fullCycleReserve, beforeFirstReceipt, required: Math.max(datedPeak, fullCycleReserve) + reserveCash };
 }
 
 export function pastureRequirements(
@@ -254,7 +281,7 @@ export function pastureRequirements(
   const core = calculateCore(a);
   const hectares = core.pastureAreaA;
   const meanWeight = (a.entryWeight + a.pivotExitWeight) / 2;
-  const meanHeads = core.simultaneousPivotA;
+  const meanHeads = core.entrantsA * core.daysPivotA / 365;
   const monthlyShares = config.monthlyForageShares;
   const validShares =
     monthlyShares.length === 12 &&
@@ -274,10 +301,10 @@ export function pastureRequirements(
     100;
   const months = monthlyShares.map((share, i) => ({
     month: i + 1,
-    demand: annualDemand / 12,
+    demand: annualDemand * MONTH_DAYS[i] / 365,
     supply: supplyKnown ? (usableAnnual * share) / 100 : null,
     gap: supplyKnown
-      ? Math.max(0, annualDemand / 12 - (usableAnnual * share) / 100)
+      ? Math.max(0, annualDemand * MONTH_DAYS[i] / 365 - (usableAnnual * share) / 100)
       : null,
   }));
   const waterKnown =

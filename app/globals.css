@@ -147,6 +147,10 @@ body { margin: 0; }
 .skip-link { position: fixed; top: -120px; left: 12px; z-index: 100; background: #d7f06b; color: #10291f; padding: 12px; border-radius: 8px; }
 .skip-link:focus { top: 12px; }
 .mobile-app-nav { display: none; }
+.primary-tabs[data-slot="tabs-list"] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); width: 100%; max-width: 100%; min-width: 0; height: auto; }
+.primary-tabs [data-slot="tabs-trigger"] { min-width: 0; white-space: normal; height: auto; min-height: 44px; }
+.simulator-app input { font-variant-numeric: tabular-nums; }
+.simulator-app .text-\[9px\], .simulator-app .text-\[10px\], .simulator-app .text-\[11px\] { font-size: 12px; }
 .app-status { border-bottom: 1px solid #dce5d9; background: #f7f9f4; }
 .app-status > div { max-width: 1540px; margin: auto; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; }
 .app-status button { min-height: 40px; padding: 8px 12px; border: 1px solid #bdd0ba; border-radius: 9px; font-weight: 600; background: white; }

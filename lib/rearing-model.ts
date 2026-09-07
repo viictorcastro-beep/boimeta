@@ -15,7 +15,7 @@ export function rearingOnly(a: Assumptions, gateNetPriceKg: number) {
     a.gmdPivotA > 0 &&
     Number.isFinite(gateNetPriceKg) &&
     gateNetPriceKg >= 0;
-  const survival = 0.998; // Mesma convenção conservadora do núcleo anual A/B.
+  const survival = 1 - Math.min(100, Math.max(0, a.pastureMortalityPercent ?? 0.2)) / 100;
   const days = valid
     ? Math.ceil((a.pivotExitWeight - a.entryWeight) / a.gmdPivotA)
     : 0;
@@ -54,10 +54,11 @@ export function rearingOnly(a: Assumptions, gateNetPriceKg: number) {
     pastureCost,
     lease,
     costs,
+    operatingCycleReserve: simultaneousHeads * preGateVariableHead + (pastureCost + lease) * Math.max(1, days / 365),
     revenue,
     margin,
     marginHa: a.totalArea > 0 ? margin / a.totalArea : 0,
-    variableCostPerSold: preGateVariableHead / survival,
+    variableCostPerSold: survival > 0 ? preGateVariableHead / survival : null,
     gateNetPriceKg,
     breakEvenPriceKg: sold > 0 ? costs / (sold * a.pivotExitWeight) : null,
     // Não usa cocho, silagem, vacas, efluente ou prêmio de exportação.
@@ -153,8 +154,7 @@ export function rearingCapitalRequirement(
 ) {
   const c = rearingOnly(a, gateNetPriceKg);
   const fullCycleReserve =
-    c.simultaneousHeads * c.preGateVariableHead +
-    (c.pastureCost + c.lease) * Math.max(1, c.days / 365) +
+    c.operatingCycleReserve +
     a.pivotInvestment +
     setupCost;
   return {

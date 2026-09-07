@@ -9,10 +9,11 @@ import { capacityActions } from '@/lib/capacity-actions';
 import { rearingOnly, rearingStartupCash, rearingCapitalRequirement, stressRearing } from '@/lib/rearing-model';
 import { areaResponse } from '@/lib/investment-screen';
 import type { ConabPrice } from '@/lib/conab-prices';
-import { referenceBridge, rankWithinBudget, cattleStartupCash, reviewDefaults, REVIEW_VERSION } from '@/lib/decision-review';
+import { referenceBridge, rankWithinBudget, cattleStartupCash, cattleCapitalRequirement, reviewDefaults, REVIEW_VERSION } from '@/lib/decision-review';
+import { pastureCapacity } from '@/lib/pasture-capacity';
 import { marketPricesUrl, isStaticEdition } from '@/lib/market-client';
 import { csvCell, validateScenario, SCENARIO_STORAGE_KEY, SCENARIO_SCHEMA } from '@/lib/scenario-storage';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -33,16 +34,8 @@ import {
   Waves,
   Wheat,
 } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+const MarginChart = lazy(() => import('@/components/comparison-charts').then(m => ({ default: m.MarginChart })));
+const StressChart = lazy(() => import('@/components/comparison-charts').then(m => ({ default: m.StressChart })));
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -280,7 +273,7 @@ function Control({
     <div className="border-b border-border/65 pb-4 last:border-0 last:pb-0">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 max-w-full items-center gap-1.5">
           <NumericInput
             aria-label={label}
             className="h-9 w-36 bg-background px-2 text-right font-mono text-sm"
@@ -373,6 +366,7 @@ type StrategyScenario = {
   note: string;
   margins: Record<string, number>;
   costs: Record<string, number>;
+  capital: Record<string, number>;
   penDaysHa: number;
 };
 
@@ -904,6 +898,7 @@ export default function Home() {
   };
 
   const futureScenarioFingerprint = JSON.stringify({
+    forage: reviewInputs,
     quantities: [assumptions.totalArea, assumptions.stockingUa, assumptions.entryWeight, assumptions.saleWeight, assumptions.gmdB, animalTimelineInputs.pastureMortality, ...crops.map((crop) => crop.yield)],
     quotes: futureQuotes,
     physicalBasePrices: futurePhysicalBasePrices,
@@ -1914,13 +1909,17 @@ export default function Home() {
     : cornGrainCashCostDm;
   const cornPurchaseCostDm =
     allocationInputs.grainPurchasePriceSack / (60 * 0.88);
+  const localPasture = useMemo(() => pastureCapacity(assumptions.stockingUa, reviewInputs), [assumptions.stockingUa, reviewInputs]);
   const physicalReference = useMemo(
-    () => calculateCore({ ...assumptions, otherIngredientSharePercent: operationalInputs.otherIngredientSharePercent,
+    () => calculateCore({ ...assumptions, stockingUa: localPasture.effectiveUa,
+      pastureMortalityPercent: animalTimelineInputs.pastureMortality, feedlotMortalityPercent: allocationInputs.feedlotMortality,
+      otherIngredientSharePercent: operationalInputs.otherIngredientSharePercent,
       feedlotCapacity: allocationInputs.feedlotCapacity, feedlotUtilization: allocationInputs.feedlotUtilization }),
-    [assumptions, operationalInputs.otherIngredientSharePercent, allocationInputs.feedlotCapacity, allocationInputs.feedlotUtilization],
+    [assumptions, localPasture.effectiveUa, animalTimelineInputs.pastureMortality, allocationInputs.feedlotMortality,
+      operationalInputs.otherIngredientSharePercent, allocationInputs.feedlotCapacity, allocationInputs.feedlotUtilization],
   );
   const physicalGrainDemandDmKg =
-    physicalReference.entrantsA * physicalReference.dietDmHead *
+    physicalReference.feedlotEntriesA * physicalReference.dietDmHead *
     Math.max(0, 1 - assumptions.forageShare / 100 - operationalInputs.otherIngredientSharePercent / 100) *
     1_000;
   const ownGrainProductionDmKg =
@@ -1960,6 +1959,9 @@ export default function Home() {
   const baseModelAssumptions = useMemo(
     () => ({
       ...assumptions,
+      stockingUa: localPasture.effectiveUa,
+      pastureMortalityPercent: animalTimelineInputs.pastureMortality,
+      feedlotMortalityPercent: allocationInputs.feedlotMortality,
       otherIngredientSharePercent: operationalInputs.otherIngredientSharePercent,
       feedlotCapacity: allocationInputs.feedlotCapacity,
       feedlotUtilization: allocationInputs.feedlotUtilization,
@@ -1974,6 +1976,9 @@ export default function Home() {
     }),
     [
       assumptions,
+      localPasture.effectiveUa,
+      animalTimelineInputs.pastureMortality,
+      allocationInputs.feedlotMortality,
       operationalInputs.otherIngredientSharePercent,
       allocationInputs.feedlotCapacity,
       allocationInputs.feedlotUtilization,
@@ -2031,16 +2036,16 @@ export default function Home() {
   const herdFlow = useMemo(
     () =>
       calculateHerdFlow({
-        annualEntrants: baseResult.pasturePotentialA,
+        annualEntrants: baseResult.pastureEntryCapacityA,
         ...herdFlowInputs,
         breedingStockingUa: breedingEconomicsInputs.breedingStockingUa,
-        stockingUa: assumptions.stockingUa,
+        stockingUa: localPasture.effectiveUa,
         totalArea: assumptions.totalArea,
       }),
     [
-      assumptions.stockingUa,
+      localPasture.effectiveUa,
       assumptions.totalArea,
-      baseResult.pasturePotentialA,
+      baseResult.pastureEntryCapacityA,
       breedingEconomicsInputs.breedingStockingUa,
       herdFlowInputs,
     ],
@@ -2236,9 +2241,9 @@ export default function Home() {
     () =>
       calculateBreedingEconomics({
         ...breedingEconomicsCommonInputs,
-        annualEntrants: baseResult.pasturePotentialA,
+        annualEntrants: baseResult.pastureEntryCapacityA,
       }),
-    [baseResult.pasturePotentialA, breedingEconomicsCommonInputs],
+    [baseResult.pastureEntryCapacityA, breedingEconomicsCommonInputs],
   );
   const breedingEconomicsB = useMemo(
     () =>
@@ -2280,7 +2285,7 @@ export default function Home() {
     !breedingEconomicsInputs.applyToComparison || replacementBlendReadyB;
   const replacementSupplyShortfallA = Math.max(
     0,
-    baseResult.pasturePotentialA -
+    baseResult.pastureEntryCapacityA -
       (breedingEconomics.recommendedOwnEntrants ?? 0) -
       (breedingEconomics.recommendedPurchasedEntrants ?? 0),
   );
@@ -2385,7 +2390,7 @@ export default function Home() {
             tone: 'warn' as const,
           };
   const grainDmHead = result.dietDmHead * Math.max(0, 1 - assumptions.forageShare / 100 - operationalInputs.otherIngredientSharePercent / 100);
-  const annualGrainDmTonnes = result.entrantsA * grainDmHead;
+  const annualGrainDmTonnes = result.feedlotEntriesA * grainDmHead;
   const annualCornSacks =
     annualGrainDmTonnes > 0
       ? (annualGrainDmTonnes * 1_000) / (60 * 0.88)
@@ -2396,7 +2401,7 @@ export default function Home() {
   const decisionDietPriceDm = !assumptions.linkFeedToCropCosts ? assumptions.dietPriceDm :
     (assumptions.forageShare / 100) *
       allocationInputs.silageOpportunityCostDm +
-    (1 - assumptions.forageShare / 100) * cornGrainCostDm +
+    Math.max(0, 1 - assumptions.forageShare / 100 - operationalInputs.otherIngredientSharePercent / 100) * cornGrainCostDm +
     assumptions.dietOtherCostDm;
   const preGateDaysA = Math.max(
     0,
@@ -2407,7 +2412,7 @@ export default function Home() {
   );
   const preGateCapitalA =
     result.simultaneousPivotA * timelineEntryCashCostHead +
-    result.pasturePotentialA *
+    result.pastureCandidatesA *
       preGateDaysA *
       integratedCommonPastureCostDay *
       (preGateDaysA / 730);
@@ -2445,7 +2450,7 @@ export default function Home() {
   );
   const feedAllocation = useMemo(
     () => calculateFeedAllocation({
-      annualCandidates: result.pasturePotentialA,
+      annualCandidates: result.pastureCandidatesA,
       entryWeight: timelineDecisionWeight,
       saleWeight: assumptions.saleWeight,
       netFinishedRevenueByGmd: (gmd: number, lot?: LotProfile) => {
@@ -2557,7 +2562,7 @@ export default function Home() {
       assumptions.feedlotCarcassYieldLiftPercent,
       integratedCommonPastureCostDay,
       scheduledLotProfiles,
-      result.pasturePotentialA,
+      result.pastureCandidatesA,
       result.silageArea,
       silageCostDm,
       postGateCapitalLimitA,
@@ -2808,7 +2813,7 @@ export default function Home() {
   const indicativeCohortHeads = Math.max(
     0,
     Math.min(
-      result.pasturePotentialA,
+      result.pastureCandidatesA,
       allocationInputs.feedlotCapacity *
         Math.max(0, allocationInputs.feedlotUtilization / 100),
     ),
@@ -3638,8 +3643,8 @@ export default function Home() {
     const fixedCapital = assumptions.pivotInvestment + operationalInputs.reserveCash + operationalInputs.setupCost;
     const startupA = cattleStartupCash(modelAssumptions, 'A', animalTimelineInputs.entryDate, operationalInputs.setupDays, operationalInputs.setupCost);
     const startupB = cattleStartupCash(modelAssumptions, 'B', animalTimelineInputs.entryDate, operationalInputs.setupDays, operationalInputs.setupCost);
-    const capitalA = Math.max(startupA?.peakFundingNeed ?? 0, result.workingCapitalA + assumptions.investment + assumptions.pivotInvestment + operationalInputs.setupCost) + operationalInputs.reserveCash;
-    const capitalB = Math.max(startupB?.peakFundingNeed ?? 0, result.workingCapitalB + assumptions.pivotInvestment + operationalInputs.setupCost) + operationalInputs.reserveCash;
+    const capitalA = cattleCapitalRequirement(modelAssumptions, 'A', startupA?.peakFundingNeed ?? 0, operationalInputs.setupCost, operationalInputs.reserveCash).required;
+    const capitalB = cattleCapitalRequirement(modelAssumptions, 'B', startupB?.peakFundingNeed ?? 0, operationalInputs.setupCost, operationalInputs.reserveCash).required;
     const cattleA: ComparisonRow = {
       id: 'cattle-a',
       label: 'Pecuária A · recria + confinamento',
@@ -3871,7 +3876,7 @@ export default function Home() {
           Math.max(0, 1 - assumptions.forageShare / 100 - operationalInputs.otherIngredientSharePercent / 100) * stressedGrainCostDm +
           assumptions.dietOtherCostDm
         : modelAssumptions.dietPriceDm;
-      const stressedCattle = simulate({
+      const stressedAssumptions = {
         ...modelAssumptions,
         totalArea: 1,
         feedlotCapacity: undefined,
@@ -3880,7 +3885,7 @@ export default function Home() {
         cowSaleArroba: modelAssumptions.cowSaleArroba * cattlePriceFactor,
         calfCost: modelAssumptions.calfCost * replacementFactor,
         cowBuyCost: modelAssumptions.cowBuyCost * replacementFactor,
-        stockingUa: Math.max(0.1, modelAssumptions.stockingUa * productivityFactor),
+        stockingUa: Math.max(0, modelAssumptions.stockingUa * productivityFactor),
         gmdPivotA: Math.max(0.05, modelAssumptions.gmdPivotA * productivityFactor),
         gmdFeedlot: Math.max(0.05, modelAssumptions.gmdFeedlot * productivityFactor),
         gmdB: Math.max(0.05, modelAssumptions.gmdB * productivityFactor),
@@ -3893,7 +3898,8 @@ export default function Home() {
           0,
           modelAssumptions.otherCostFactor * costFactor,
         ),
-      });
+      };
+      const stressedCattle = simulate(stressedAssumptions);
       const stressedRearing = stressRearing(rearingAssumptions, animalTimelineInputs.gateValuePerKgLive, {
         productivity: productivityFactor, cost: costFactor, replacement: replacementFactor, price: cattlePriceFactor,
       });
@@ -3923,6 +3929,11 @@ export default function Home() {
         .reduce((sum, crop) => sum + crop.deductionsHa, 0);
       return {
         id,
+        capital: {
+          'cattle-a': cattleCapitalRequirement({ ...stressedAssumptions, investment: 0, pivotInvestment: 0 }, 'A').required,
+          'cattle-b': cattleCapitalRequirement({ ...stressedAssumptions, investment: 0, pivotInvestment: 0 }, 'B').required,
+          'cattle-c': stressedRearing.operatingCycleReserve,
+        },
         penDaysHa: stressedCattle.confinementOccupancy * 365,
         label: low ? 'Faixa inferior' : 'Faixa superior',
         note: low
@@ -3959,6 +3970,11 @@ export default function Home() {
       buildStressScenario('low'),
       {
         id: 'base',
+        capital: {
+          'cattle-a': cattleCapitalRequirement({ ...modelAssumptions, totalArea: 1, feedlotCapacity: undefined, investment: 0, pivotInvestment: 0 }, 'A').required,
+          'cattle-b': cattleCapitalRequirement({ ...modelAssumptions, totalArea: 1, feedlotCapacity: undefined, investment: 0, pivotInvestment: 0 }, 'B').required,
+          'cattle-c': rearing.operatingCycleReserve / Math.max(assumptions.totalArea, 1),
+        },
         penDaysHa: strategyUnitCattle.confinementOccupancy * 365,
         label: 'Cenário central',
         note: 'Premissas atualmente informadas no simulador.',
@@ -3982,8 +3998,8 @@ export default function Home() {
         };
         const scenarioCosts = strategyScenarios.map(
           (scenario) =>
-            scenario.costs[row.id] ??
-            row.cost / Math.max(assumptions.totalArea, 1),
+            Math.max(scenario.capital[row.id] ?? 0, scenario.costs[row.id] ??
+            row.cost / Math.max(assumptions.totalArea, 1)),
         );
         return {
           id: row.id,
@@ -4674,6 +4690,10 @@ export default function Home() {
       ['Arroba do boi (R$/@)', assumptions.priceArroba],
       ['Bezerro 240 kg (R$/cab)', assumptions.calfCost],
       ['Lotação (UA/ha)', assumptions.stockingUa],
+      ['Lotação efetiva no motor (UA/ha)', modelAssumptions.stockingUa],
+      ['Teto local de forragem (UA/ha)', localPasture.supportUa ?? 'não informado'],
+      ['Mortalidade no pasto (%)', animalTimelineInputs.pastureMortality],
+      ['Mortalidade no cocho (%)', allocationInputs.feedlotMortality],
       ['Área de silagem (%)', assumptions.silageShare],
       ['GMD recria A (kg/dia)', assumptions.gmdPivotA],
       ['GMD confinamento (kg/dia)', assumptions.gmdFeedlot],
@@ -4698,7 +4718,7 @@ export default function Home() {
       ['Nota de área', 'A área-base fecha pasto e silagem; todo hectare de milho-grão próprio é somado ao footprint. Silagem excedente permanece estoque sem receita até existir venda física contratada.'],
       [],
       ['FUNIL DO REBANHO', 'Valor'],
-      ['Candidatos anuais após recria (cab)', result.pasturePotentialA],
+      ['Candidatos anuais após recria (cab)', result.pastureCandidatesA],
       ['Capacidade instantânea (UA)', herdFlow.totalUaCapacity],
       ['Peso médio para conversão (kg/cab)', herdFlowInputs.averageStockWeight],
       ['Cabeças simultâneas equivalentes', herdFlow.simultaneousHeads],
@@ -5134,6 +5154,16 @@ export default function Home() {
             </div>
 
             <TabsContent value="quick" className="space-y-5">
+              <section className={`rounded-xl border p-4 text-sm ${localPasture.limited ? 'bg-[#fff8e9]' : 'bg-card'}`} aria-label="Capacidade de pasto aplicada">
+                <h2 className="font-semibold">Lotação desejada: {two.format(assumptions.stockingUa)} UA/ha · aplicada: {two.format(localPasture.effectiveUa)} UA/ha</h2>
+                <p className="mt-2">{localPasture.known
+                  ? `O motor A/B/C usa o menor limite entre lotação desejada e oferta de pasto informada. Mês limitante: ${localPasture.limitingMonth}. Sem transferência automática de sobras entre meses; os custos da área inteira permanecem.`
+                  : localPasture.annualKnown
+                    ? 'Teto anual aplicado, mas a distribuição mensal não fecha 100%. Corrija os meses para avaliar a sazonalidade; capacidade contínua ainda não comprovada.'
+                    : 'Capacidade presumida: faltam produção de matéria seca e aproveitamento válidos. A simulação usa a lotação desejada, sem comprovar que o pasto a suporta.'}</p>
+                <p className="mt-2">Mortalidade aplicada: {two.format(animalTimelineInputs.pastureMortality)}% no pasto e {two.format(allocationInputs.feedlotMortality)}% no cocho. Perdas ao final de cada fase, sem prêmio de exportação automático.</p>
+                <button type="button" className="mt-2 font-semibold underline" onClick={() => setActiveTab('audit')}>Conferir dados de pasto, água e custeio →</button>
+              </section>
               <div className="rounded-xl border bg-[#eef5ef] p-4 text-sm">
                 <strong>Mesma área, mesmo capital:</strong> o líder respeita o orçamento estimado; resultados fora do limite permanecem na tabela.
                 {budgetRanking.unconstrained && <span> Sem restrição de caixa, a maior margem é de {budgetRanking.unconstrained.label}: {brl0.format(budgetRanking.unconstrained.marginHa)}/ha total/ano.</span>}
@@ -5198,7 +5228,7 @@ export default function Home() {
 
               <Panel>
                 <SectionTitle eyebrow="Só o necessário para comparar lavouras" title="Preço e produtividade" text="Os custos permanecem preenchidos pela base local e podem ser abertos depois. Aqui você altera apenas as duas variáveis que mais mudam a margem de cada cultura." />
-                <div className="grid gap-4 p-5 md:grid-cols-3 lg:p-6">{crops.map((crop) => <div className="rounded-2xl border border-border/75 bg-[#fafbf8] p-4" key={`quick-${crop.id}`}><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold">{crop.shortName}</p><Badge variant="outline">irrigado pleno</Badge></div><div className="mt-4 grid gap-3"><Control label="Preço" value={crop.price} suffix={`R$/${crop.unit.split('/')[0]}`} min={0} max={crop.id === 'cotton-irrigated' ? 500 : 1000} step={0.5} onChange={(value) => updateCrop(crop.id, 'price', value)} /><Control label="Produtividade" value={crop.yield} suffix={crop.unit} min={0} max={crop.id === 'cotton-irrigated' ? 1000 : 500} step={1} onChange={(value) => updateCrop(crop.id, 'yield', value)} /></div></div>)}</div>
+                <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3 lg:p-6">{crops.map((crop) => <div className="rounded-2xl border border-border/75 bg-[#fafbf8] p-4" key={`quick-${crop.id}`}><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold">{crop.shortName}</p><Badge variant="outline">irrigado pleno</Badge></div><div className="mt-4 grid gap-3"><Control label="Preço" value={crop.price} suffix={`R$/${crop.unit.split('/')[0]}`} min={0} max={crop.id === 'cotton-irrigated' ? 500 : 1000} step={0.5} onChange={(value) => updateCrop(crop.id, 'price', value)} /><Control label="Produtividade" value={crop.yield} suffix={crop.unit} min={0} max={crop.id === 'cotton-irrigated' ? 1000 : 500} step={1} onChange={(value) => updateCrop(crop.id, 'yield', value)} /></div></div>)}</div>
               </Panel>
 
               <Panel>
@@ -5226,7 +5256,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="audit" className="space-y-5">
-              <DecisionReview assumptions={modelAssumptions} anchor={animalTimelineInputs.entryDate} config={reviewInputs} onConfig={setReviewInputs}
+              <DecisionReview assumptions={modelAssumptions} anchor={animalTimelineInputs.entryDate} config={reviewInputs} onConfig={(next) => { setReviewInputs(next); invalidateOperationalConfirmations(); }}
                 operations={operationalInputs} onOperation={(key, value) => { setOperationalInputs((current) => ({ ...current, [key]: value })); invalidateOperationalConfirmations(); }}
                 budget={strategyCapitalLimit} onBudget={setStrategyCapitalLimit} exportScenario={serializedScenario} restoreScenario={restoreScenario}
                 onResetReference={loadProductionBase} />
@@ -5548,7 +5578,7 @@ export default function Home() {
                 <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <Metric label="Capacidade instantânea" value={`${int.format(herdFlow.totalUaCapacity)} UA`} note={`${int.format(herdFlow.totalUaCapacity * 450)} kg de peso vivo`} tone="green" />
                   <Metric label="Cabeças simultâneas" value={`${int.format(herdFlow.simultaneousHeads)} cab`} note={`A ${int.format(herdFlowInputs.averageStockWeight)} kg médios/cabeça`} />
-                  <Metric label="Candidatos anuais após recria" value={`${int.format(result.pasturePotentialA)} cab/ano`} note={`${two.format(result.cyclesA)} giros teóricos · antes dos limites de cocho e alimento`} />
+                  <Metric label="Candidatos anuais após recria" value={`${int.format(result.pastureCandidatesA)} cab/ano`} note={`${two.format(result.cyclesA)} giros teóricos · antes dos limites de cocho e alimento`} />
                   <Metric label="Vagas próprias informadas" value={`${int.format(allocationInputs.feedlotCapacity)} cab`} note={`${one.format(allocationInputs.feedlotUtilization)}% de utilização máxima`} tone={allocationInputs.feedlotCapacity < result.confinementOccupancy ? 'warn' : 'plain'} />
                 </div>
                 <div className="mx-5 mb-5 rounded-xl border border-[#e2c37e]/35 bg-[#fff8e9] p-4 text-xs leading-relaxed text-[#735a2a] lg:mx-6 lg:mb-6"><strong>Leitura correta:</strong> {one.format(assumptions.stockingUa)} UA/ha equivalem a {int.format(assumptions.stockingUa * 450)} kg vivos/ha. A {int.format(herdFlowInputs.averageStockWeight)} kg, isso representa {one.format((assumptions.stockingUa * 450) / Math.max(herdFlowInputs.averageStockWeight, 1))} cabeças simultâneas/ha — não uma promessa de produção anual.</div>
@@ -5715,16 +5745,7 @@ export default function Home() {
               <Panel>
                 <SectionTitle eyebrow={`Mesma base irrigada · ${int.format(assumptions.totalArea)} ha`} title="Qual uso entrega mais margem por hectare?" text={`Comparação anual em regime pleno com a base fornecida. A entrada do gado ancora uma janela operacional separada de ${COMMON_HORIZON_DAYS} dias: plantio, colheita e disponibilidade são derivados para Barra/BA, enquanto capacidade, preço atual e caixa aparecem como alertas de execução.`} />
                 <div className="h-[330px] p-4 sm:p-6">
-                  {activeTab === 'compare' ? <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} initialDimension={{ width: 800, height: 360 }}>
-                    <BarChart data={rankableComparisons.map((row) => ({ name: row.label.replace('Pecuária ', 'Pec. ').replace(' — ', ' · '), value: Math.round(row.marginHa) }))} layout="vertical" margin={{ left: 8, right: 18, top: 4, bottom: 4 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#dce5d9" />
-                      <XAxis type="number" tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="name" width={118} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{ fill: '#edf3e8' }} formatter={(value) => [brl0.format(Number(value)), 'Margem/ha']} />
-                      <ReferenceLine x={0} stroke="#9aa99c" />
-                      <Bar dataKey="value" fill="#2f6b45" radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer> : null}
+                  {activeTab === 'compare' ? <Suspense fallback={<output>Carregando gráfico… A tabela continua disponível abaixo.</output>}><MarginChart rows={rankableComparisons.map(row => ({ name: row.label.replace('Pecuária ', 'Pec. '), value: Math.round(row.marginHa) }))} /></Suspense> : null}
                 </div>
                 <div className="grid gap-3 border-t border-border/70 p-5 sm:grid-cols-2 xl:grid-cols-4 lg:p-6">
                   <Metric label="Janela operacional" value={`${dateBr(automaticCalendar.anchorDate)} → ${dateBr(automaticCalendar.horizonEndDate)}`} note={`${COMMON_HORIZON_DAYS} dias · não é o fluxo anual do ranking · Barra/BA`} />
@@ -5913,7 +5934,7 @@ export default function Home() {
               </Panel>
 
               <div className="grid gap-5 xl:grid-cols-2">
-                <Panel><SectionTitle eyebrow="Pecuária A" title="Custo econômico por boi terminado" text="240 kg na entrada; recria no pivô e acabamento no cocho. A origem própria entra pelo custo de oportunidade; o desembolso aparece separado." /><div className="p-5 lg:p-6"><CostRows rows={[["Entrada econômica", effectiveReplacementCostHead], ["Frete de compra", result.costComponentsA.freightIn], ["Suplementação no pivô", result.costComponentsA.supplement], ["Dieta de confinamento", result.costComponentsA.feedlotDiet], ["Operação do confinamento", result.costComponentsA.feedlotOperation], ["Sanidade e manejo", result.costComponentsA.health], ["Frete de venda", result.costComponentsA.freightOut], ["Pivô, energia e manutenção", result.costComponentsA.pivotOperation]]} total={staticEconomicCostHeadA} /><div className="mt-5 grid grid-cols-2 gap-3"><Metric label="Margem econômica/cab" value={brl2.format(staticEconomicMarginHeadA)} tone="green" /><Metric label="Desembolso estimado/cab" value={brl2.format(staticCashCostHeadA)} note="Entrada própria pelo custo caixa; não inclui CAPEX da matriz" /></div></div></Panel>
+                <Panel><SectionTitle eyebrow="Pecuária A" title="Custo econômico por boi terminado" text="240 kg na entrada; recria no pivô e acabamento no cocho. A origem própria entra pelo custo de oportunidade; o desembolso aparece separado." /><div className="p-5 lg:p-6"><CostRows rows={[["Entrada econômica", effectiveReplacementCostHead], ["Frete de compra", result.costComponentsA.freightIn], ["Suplementação no pivô", result.costComponentsA.supplement], ["Dieta de confinamento", result.costComponentsA.feedlotDiet], ["Operação do confinamento", result.costComponentsA.feedlotOperation], ["Sanidade e manejo", result.costComponentsA.health], ["Frete de venda", result.costComponentsA.freightOut], ["Pivô, energia e manutenção", result.costComponentsA.pivotOperation], ["Custeio das perdas por fase", result.mortalityCostHeadA]]} total={staticEconomicCostHeadA} /><div className="mt-5 grid grid-cols-2 gap-3"><Metric label="Margem econômica/cab" value={brl2.format(staticEconomicMarginHeadA)} tone="green" /><Metric label="Desembolso estimado/cab" value={brl2.format(staticCashCostHeadA)} note="Entrada própria pelo custo caixa; não inclui CAPEX da matriz" /></div></div></Panel>
                 <Panel><SectionTitle eyebrow="Pecuária B" title="Custo econômico por boi terminado" text="240 a 540 kg inteiramente no pivô. A demanda anual distinta recalcula a proporção entre bezerros próprios e comprados." /><div className="p-5 lg:p-6"><CostRows rows={[["Entrada econômica", effectiveReplacementCostHeadB], ["Frete de compra", result.costComponentsB.freightIn], ["Suplementação no pivô", result.costComponentsB.supplement], ["Sanidade e manejo", result.costComponentsB.health], ["Frete de venda", result.costComponentsB.freightOut], ["Pivô, energia e manutenção", result.costComponentsB.pivotOperation]]} total={staticEconomicCostHeadB} /><div className="mt-5 grid grid-cols-2 gap-3"><Metric label="Margem econômica/cab" value={brl2.format(staticEconomicMarginHeadB)} tone="green" /><Metric label="Desembolso estimado/cab" value={brl2.format(staticCashCostHeadB)} note="Entrada própria pelo custo caixa; não inclui CAPEX da matriz" /></div></div></Panel>
               </div>
 
@@ -6102,7 +6123,7 @@ export default function Home() {
 
               <Panel className="overflow-hidden">
                 <SectionTitle eyebrow="Matriz de robustez" title="Margem por hectare em cada faixa" text="O ranking central pode inverter quando preço, produtividade e custo caminham juntos. A, B e C usam hectares exclusivos. A contém pasto e silagem; B termina no pivô; C recria e vende magros com reposição comprada. Milho do cocho é comprado e milho agrícola é vendido: não há transferência física automática entre módulos. O mix usa custeio anual conservador; o caixa de implantação precisa ser conferido depois." />
-                <div className="h-[420px] p-4 sm:p-6">{activeTab === 'strategy' ? <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} initialDimension={{ width: 800, height: 380 }}><BarChart data={strategyChartData} layout="vertical" margin={{ left: 8, right: 18, top: 4, bottom: 4 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#dce5d9" /><XAxis type="number" tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="name" width={128} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: '#edf3e8' }} formatter={(value, name) => [brl0.format(Number(value)), name === 'low' ? 'Inferior' : name === 'base' ? 'Central' : 'Superior']} /><ReferenceLine x={0} stroke="#9aa99c" /><Bar dataKey="low" fill="#d6a14b" radius={[0, 4, 4, 0]} /><Bar dataKey="base" fill="#2f6b45" radius={[0, 4, 4, 0]} /><Bar dataKey="high" fill="#9fbd3e" radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer> : null}</div>
+                <div className="h-[420px] p-4 sm:p-6">{activeTab === 'strategy' ? <Suspense fallback={<output>Carregando gráfico…</output>}><StressChart rows={strategyChartData} /></Suspense> : null}</div>
                 <Table><TableHeader><TableRow className="bg-[#f4f7f1]"><TableHead className="pl-5">Alternativa</TableHead><TableHead className="text-right">Inferior</TableHead><TableHead className="text-right">Central</TableHead><TableHead className="text-right">Superior</TableHead><TableHead className="text-right">Pior faixa</TableHead><TableHead className="pr-5 text-right">Valor no critério</TableHead></TableRow></TableHeader><TableBody>{strategyRanking.map((activity, index) => <TableRow className={strategyReady && index === 0 ? 'bg-[#f2f7da]/65' : ''} key={activity.id}><TableCell className="pl-5 font-semibold">{activity.label}</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(activity.margins.low)}/ha</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(activity.margins.base)}/ha</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(activity.margins.high)}/ha</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(Math.min(activity.margins.low, activity.margins.base, activity.margins.high))}/ha</TableCell><TableCell className="pr-5 text-right font-mono text-xs font-semibold">{brl0.format(activity.scoreHa)}/ha</TableCell></TableRow>)}</TableBody></Table>
               </Panel>
 

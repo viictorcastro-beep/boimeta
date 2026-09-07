@@ -13,7 +13,10 @@ import {
 } from '../lib/number-format.ts';
 import { areaResponse } from '../lib/investment-screen.ts';
 import { calculateCore, defaultAssumptions } from '../lib/livestock-model.ts';
-import { rankWithinBudget } from '../lib/decision-review.ts';
+import { rankWithinBudget, cattleCapitalRequirement, cattleStartupCash, pastureRequirements, reviewDefaults } from '../lib/decision-review.ts';
+import { pastureCapacity, MONTH_DAYS } from '../lib/pasture-capacity.ts';
+import { allocateStrategy } from '../lib/strategy-model.ts';
+import { capacityActions } from '../lib/capacity-actions.ts';
 let count = 0;
 const test = (name, fn) => {
   fn();
@@ -314,5 +317,109 @@ test('entradas vazias ou inválidas não viram zero silencioso', () => {
     assert.equal(parseNumberBr(text), null);
   assert.equal(boundedNumber(-10, 0, 100), 0);
   assert.equal(boundedNumber(200, 0, 100), 100);
+});
+const forage = { ...reviewDefaults, pastureYieldDmTonnesHa: 20, grazingEfficiencyPercent: 60,
+  monthlyForageShares: MONTH_DAYS.map(d => d / 365 * 100) };
+test('forragem ausente não é zero nem capacidade comprovada', () => {
+  const r = pastureCapacity(7.8, reviewDefaults);
+  assert.equal(r.known, false); close(r.effectiveUa, 7.8);
+});
+test('forragem medida limita lotação anual e mensal sem criar animais', () => {
+  const r = pastureCapacity(7.8, forage);
+  close(r.supportUa, 12000 / (450 * .025 * 365), 1e-9);
+  assert.ok(r.limited);
+  close(pastureCapacity(1, forage).effectiveUa, 1);
+});
+test('mês sem oferta impede fluxo contínuo sem reserva explícita', () => {
+  const r = pastureCapacity(7.8, { ...forage, monthlyForageShares: [0, ...Array(11).fill(100/11)] });
+  close(r.effectiveUa, 0); assert.equal(r.limitingMonth, 1);
+});
+test('distribuição mensal inválida não recebe selo local', () => {
+  const r = pastureCapacity(7.8, { ...forage, monthlyForageShares: Array(12).fill(10) });
+  assert.equal(r.known, false);
+  assert.ok(r.annualKnown && r.effectiveUa < 7.8);
+});
+test('cocho limitado reduz demanda real de pasto sem apagar seu custo', () => {
+  const small = { ...a, feedlotCapacity: 100 };
+  const r = calculateCore(small), p = pastureRequirements(small, forage);
+  close(p.annualDemand, r.entrantsA * r.daysPivotA * ((a.entryWeight + a.pivotExitWeight)/2) * .025);
+  assert.ok(p.annualDemand < pastureRequirements(a, forage).annualDemand);
+  close(r.annualPastureOperatingA, calculateCore(a).annualPastureOperatingA);
+});
+test('limite de MS limita A/B/C e preserva orçamento do hectare', () => {
+  const bounded = { ...a, stockingUa: pastureCapacity(a.stockingUa, forage).effectiveUa };
+  assert.ok(calculateCore(bounded).soldA < calculateCore(a).soldA);
+  assert.ok(calculateCore(bounded).soldB < calculateCore(a).soldB);
+  assert.ok(rearingOnly(bounded, 12).sold < rearingOnly(a, 12).sold);
+  close(rearingOnly(bounded, 12).pastureCost, rearingOnly(a, 12).pastureCost);
+});
+test('mortalidade é fechada por fase sem mortos consumindo cocho', () => {
+  const r = calculateCore({ ...a, pastureMortalityPercent: 10, feedlotMortalityPercent: 5 });
+  close(r.feedlotEntriesA, r.entrantsA * .9);
+  close(r.soldA, r.entrantsA * .9 * .95);
+  close(r.soldB, r.entrantsB * .9);
+  close(r.silageConsumedDm, r.feedlotEntriesA * r.forageDmHead);
+  close(r.confinementOccupancy, r.feedlotEntriesA * r.daysFeedlot / 365);
+  close(r.cashCostsA, r.netRevenueA - r.ebitdaA);
+});
+test('alterar mortalidade do cocho não altera B/C', () => {
+  const high = { ...a, feedlotMortalityPercent: 10 };
+  close(calculateCore(high).ebitdaB, calculateCore(a).ebitdaB);
+  close(rearingOnly(high, 12).margin, rearingOnly(a, 12).margin);
+  assert.ok(calculateCore(high).ebitdaA < calculateCore(a).ebitdaA);
+});
+test('100% de perdas no pasto mantém compras e prejuízo, sem dieta de cocho', () => {
+  const m = { ...a, includeCows: false, pastureMortalityPercent: 100 };
+  const r = calculateCore(m);
+  assert.ok(r.entrantsA > 0); close(r.soldA, 0); close(r.soldB, 0); close(r.feedlotEntriesA, 0);
+  assert.ok(r.ebitdaA < 0 && r.ebitdaB < 0);
+  assert.ok(Number.isFinite(r.cashCostsA) && Number.isFinite(r.operationalNpv));
+  assert.ok(rearingOnly(m, 12).margin < 0);
+  assert.ok(cattleStartupCash(m, 'A', '2026-09-10').peakFundingNeed > 0);
+});
+test('100% de perdas no cocho mantém vagas, alimentação e custo', () => {
+  const r = calculateCore({ ...a, includeCows: false, feedlotMortalityPercent: 100 });
+  close(r.soldA, 0); assert.ok(r.feedlotEntriesA > 0 && r.silageConsumedDm > 0 && r.ebitdaA < 0);
+  assert.ok(capacityActions({ ...a, feedlotMortalityPercent: 100 }, 65).unusedFlowArea < a.totalArea);
+});
+test('A/B reservam ciclo completo mesmo com entrada tardia', () => {
+  for (const route of ['A','B']) {
+    const m = { ...a, includeCows: false, totalArea: 400, investment: 0, pivotInvestment: 0 };
+    const floor = cattleCapitalRequirement(m, route).fullCycleReserve;
+    const immediate = cattleCapitalRequirement(m, route, cattleStartupCash(m, route, '2026-09-10').peakFundingNeed).required;
+    for (const delay of [0,200,350]) {
+      const cash = cattleStartupCash(m, route, '2026-09-10', delay);
+      assert.ok(cattleCapitalRequirement(m, route, cash.peakFundingNeed).required >= floor);
+      assert.ok(cattleCapitalRequirement(m, route, cash.peakFundingNeed).required >= immediate - 1e-6);
+    }
+    assert.ok(floor > 12000000);
+  }
+});
+test('piso de ciclo não altera margem e contabiliza CAPEX só uma vez', () => {
+  const floor = cattleCapitalRequirement(a, 'A').required;
+  close(cattleCapitalRequirement({ ...a, pivotInvestment: a.pivotInvestment + 1e6 }, 'A').required, floor + 1e6);
+  const slow = { ...a, gmdB: .3 };
+  assert.ok(cattleCapitalRequirement(slow, 'B').required > cattleCapitalRequirement(a, 'B').required);
+});
+test('esteira A reserva recompra enquanto primeiro lote está no cocho', () => {
+  for (const gmd of [1.48, .4]) {
+    const m = { ...defaultAssumptions, gmdFeedlot: gmd, includeCows: false, investment: 0, pivotInvestment: 0 };
+    const immediate = cattleCapitalRequirement(m, 'A', cattleStartupCash(m, 'A', '2026-09-10').peakFundingNeed).required;
+    const delayed = cattleCapitalRequirement(m, 'A', cattleStartupCash(m, 'A', '2026-09-10',350).peakFundingNeed).required;
+    close(delayed, immediate, .01);
+  }
+});
+test('candidatos magros não dependem de perdas futuras no cocho', () => {
+  close(calculateCore({ ...a, feedlotMortalityPercent: 10 }).pastureCandidatesA, calculateCore(a).pastureCandidatesA);
+  close(calculateCore(a).pastureCandidatesA, calculateCore(a).pastureEntryCapacityA * calculateCore(a).pastureSurvival);
+});
+test('mix de recria longa não gasta R$8,78mi sob limite de R$6mi', () => {
+  const m = { ...defaultAssumptions, totalArea: 1, includeCows: false, investment: 0, pivotInvestment: 0, gmdPivotA: .3 };
+  const c = rearingOnly(m, 14);
+  assert.ok(c.days > 365 && c.operatingCycleReserve > c.costs);
+  const mix = allocateStrategy({ totalArea: 400, capitalLimit: 6e6, maxSharePercent: 100, criterion: 'defensive',
+    activities: [{ id: 'cattle-c', label: 'C', margins: { low: c.margin, base: c.margin, high: c.margin }, cashCostHa: Math.max(c.costs, c.operatingCycleReserve) }] });
+  assert.ok(mix.rows[0].area * c.operatingCycleReserve <= 6e6 + .01);
+  close(mix.rows[0].area, 6e6 / c.operatingCycleReserve, .01);
 });
 console.log('business-audit: ' + count + ' testes aprovados');

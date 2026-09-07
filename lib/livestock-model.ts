@@ -41,6 +41,8 @@ export type Assumptions = {
   otherIngredientSharePercent?: number;
   feedlotCapacity?: number;
   feedlotUtilization?: number;
+  pastureMortalityPercent?: number;
+  feedlotMortalityPercent?: number;
 };
 
 export const BASE = {
@@ -192,29 +194,42 @@ export function calculateCore(a: Assumptions) {
   const cyclesB = routeBInputValid ? 365 / daysB : 0;
   const avgWeightA = (a.entryWeight + a.pivotExitWeight) / 2;
   const avgWeightB = (a.entryWeight + a.saleWeight) / 2;
-  const survival = 0.998;
+  const pastureSurvival = 1 - Math.min(100, Math.max(0, a.pastureMortalityPercent ?? 0.2)) / 100;
+  const feedlotSurvival = 1 - Math.min(100, Math.max(0, a.feedlotMortalityPercent ?? 0)) / 100;
+  const survival = pastureSurvival * feedlotSurvival;
 
   const simultaneousPivotA =
     (pastureAreaA * a.stockingUa) / Math.max(avgWeightA / 450, 0.1);
   const simultaneousPivotB =
     (pastureAreaB * a.stockingUa) / Math.max(avgWeightB / 450, 0.1);
-  const pasturePotentialA = simultaneousPivotA * cyclesA * survival;
-  const pasturePotentialB = simultaneousPivotB * cyclesB * survival;
+  const pastureEntryCapacityA = simultaneousPivotA * cyclesA;
+  const pastureCandidatesA = pastureEntryCapacityA * pastureSurvival;
+  const pasturePotentialA = pastureCandidatesA * feedlotSurvival;
+  const pasturePotentialB = simultaneousPivotB * cyclesB * pastureSurvival;
 
   const dietDmHead = (a.dietDmDay * daysFeedlot) / 1_000;
   const forageDmHead = dietDmHead * (a.forageShare / 100);
   const usableSilageDmHa =
     a.silageYieldDm * a.silageCrops * (a.silageRecovery / 100);
   const silagePotentialA =
-    forageDmHead > 0 ? (silageArea * usableSilageDmHa) / forageDmHead * survival : Infinity;
+    forageDmHead > 0 ? (silageArea * usableSilageDmHa) / forageDmHead * feedlotSurvival : Infinity;
   const feedlotPotentialA = a.feedlotCapacity === undefined ? Infinity : Math.max(0, a.feedlotCapacity) *
-    Math.max(0, Math.min(100, a.feedlotUtilization ?? 100)) / 100 * 365 / daysFeedlot * survival;
-  const soldA = routeAInputValid ? Math.max(0, Math.min(pasturePotentialA, silagePotentialA, feedlotPotentialA)) : 0;
-  const soldB = Math.max(0, pasturePotentialB);
+    Math.max(0, Math.min(100, a.feedlotUtilization ?? 100)) / 100 * 365 / daysFeedlot * feedlotSurvival;
+  const feedlotEntryLimit = Math.min(
+    forageDmHead > 0 ? silageArea * usableSilageDmHa / forageDmHead : Infinity,
+    a.feedlotCapacity === undefined ? Infinity : Math.max(0, a.feedlotCapacity) *
+      Math.max(0, Math.min(100, a.feedlotUtilization ?? 100)) / 100 * 365 / daysFeedlot,
+  );
+  const entrantsA = routeAInputValid ? Math.max(0, Math.min(simultaneousPivotA * cyclesA,
+    pastureSurvival > 0 ? feedlotEntryLimit / pastureSurvival : Infinity)) : 0;
+  const entrantsB = Math.max(0, simultaneousPivotB * cyclesB);
+  const feedlotEntriesA = entrantsA * pastureSurvival;
+  const soldA = feedlotEntriesA * feedlotSurvival;
+  const soldB = entrantsB * pastureSurvival;
   const bindingConstraintA =
     feedlotPotentialA < Math.min(pasturePotentialA, silagePotentialA) ? 'vagas-dia de cocho' : pasturePotentialA <= silagePotentialA ? 'pasto sob pivô' : 'silagem';
   const requiredSilageArea =
-    usableSilageDmHa > 0 ? (pasturePotentialA / survival * forageDmHead) / usableSilageDmHa : Infinity;
+    usableSilageDmHa > 0 ? (simultaneousPivotA * cyclesA * pastureSurvival * forageDmHead) / usableSilageDmHa : Infinity;
   const balancedStockingUa =
     (silagePotentialA / Math.max(cyclesA * survival, 0.01)) *
     (avgWeightA / 450) /
@@ -257,13 +272,13 @@ export function calculateCore(a: Assumptions) {
     variableFactor;
   const allocatedSilageCostHead =
     soldA > 0 ? annualSilageCashCost / soldA : 0;
-  const silageConsumedDm = soldA / survival * forageDmHead;
+  const silageConsumedDm = feedlotEntriesA * forageDmHead;
   const silageProducedDm = silageArea * usableSilageDmHa;
   const silageSurplusDm = Math.max(0, silageProducedDm - silageConsumedDm);
   const silageSurplusCashCost = Math.max(
     0,
     annualSilageCashCost -
-      soldA * embeddedSilageCostHead * variableFactor,
+      feedlotEntriesA * embeddedSilageCostHead * variableFactor,
   );
   const costComponentsA = {
     animal: a.calfCost,
@@ -288,29 +303,21 @@ export function calculateCore(a: Assumptions) {
   };
   // Perdas no fim da fase: compra e custeio dos animais perdidos permanecem.
   // Hipótese conservadora explícita; o modelo de lotes pode datar perdas antes.
-  const mortalityCostHeadA = (1 / survival - 1) *
-    (a.calfCost + costComponentsA.freightIn + costComponentsA.supplement +
-      nonSilageDietCostHead + costComponentsA.feedlotOperation + costComponentsA.health);
-  const mortalityCostHeadB = (1 / survival - 1) *
-    (a.calfCost + costComponentsB.freightIn + costComponentsB.supplement + costComponentsB.health);
-  const cashCostHeadA =
-    costComponentsA.animal +
-    costComponentsA.freightIn +
-    costComponentsA.supplement +
-    costComponentsA.feedlotDiet +
-    costComponentsA.feedlotOperation +
-    costComponentsA.health +
-    costComponentsA.freightOut +
-    costComponentsA.pivotOperation + mortalityCostHeadA;
-  const cashCostHeadB =
-    costComponentsB.animal +
-    costComponentsB.freightIn +
-    costComponentsB.supplement +
-    costComponentsB.health +
-    costComponentsB.freightOut +
-    costComponentsB.pivotOperation + mortalityCostHeadB;
-  const cashMarginHeadA = netSaleA - cashCostHeadA;
-  const cashMarginHeadB = netSaleB - cashCostHeadB;
+  const preFeedlotCostHead = a.calfCost + costComponentsA.freightIn + costComponentsA.supplement + costComponentsA.health;
+  const feedlotVariableCostHead = nonSilageDietCostHead + costComponentsA.feedlotOperation;
+  const preSaleCostHeadB = a.calfCost + costComponentsB.freightIn + costComponentsB.supplement + costComponentsB.health;
+  // Perdas ao fim de cada fase: mortos no pasto não consomem dieta nem vagas de cocho.
+  // As quantidades custeadas permanecem mesmo se nenhuma cabeça chegar à venda.
+  const operatingCostsA = entrantsA * preFeedlotCostHead + feedlotEntriesA * feedlotVariableCostHead +
+    soldA * costComponentsA.freightOut + annualSilageCashCost + annualPastureOperatingA * variableFactor;
+  const operatingCostsB = entrantsB * preSaleCostHeadB + soldB * costComponentsB.freightOut + annualPastureOperatingB * variableFactor;
+  const mortalityCostHeadA = soldA > 0 ? (entrantsA - soldA) / soldA * preFeedlotCostHead +
+    (feedlotEntriesA - soldA) / soldA * feedlotVariableCostHead : 0;
+  const mortalityCostHeadB = soldB > 0 ? (entrantsB - soldB) / soldB * preSaleCostHeadB : 0;
+  const cashCostHeadA = soldA > 0 ? operatingCostsA / soldA : 0;
+  const cashCostHeadB = soldB > 0 ? operatingCostsB / soldB : 0;
+  const cashMarginHeadA = soldA > 0 ? netSaleA - cashCostHeadA : 0;
+  const cashMarginHeadB = soldB > 0 ? netSaleB - cashCostHeadB : 0;
 
   // Opportunity cows use one explicitly shared post-silage batch on the
   // silage hectares. They do not create another 25% of invisible land.
@@ -330,8 +337,8 @@ export function calculateCore(a: Assumptions) {
   // Mantemos o valor-alvo para diagnóstico, mas nunca o lançamos aqui.
   const includedFertilizerSavings = 0;
   const landLeaseCost = a.totalArea * a.landLeaseHa;
-  const unallocatedSilageCost = soldA > 0 ? 0 : annualSilageCashCost + annualPastureOperatingA * variableFactor;
-  const unallocatedPastureB = soldB > 0 ? 0 : annualPastureOperatingB * variableFactor;
+  const unallocatedSilageCost = soldA > 0 ? 0 : operatingCostsA;
+  const unallocatedPastureB = soldB > 0 ? 0 : operatingCostsB;
 
   const ebitdaA =
     soldA * cashMarginHeadA +
@@ -344,7 +351,7 @@ export function calculateCore(a: Assumptions) {
   const ebitA = ebitdaA - depreciationA;
   const ebitB = ebitdaB - depreciationB;
   const incrementalEbitda = ebitdaA - ebitdaB;
-  const confinementOccupancy = (soldA / survival * daysFeedlot) / 365;
+  const confinementOccupancy = (feedlotEntriesA * daysFeedlot) / 365;
   const recommendedConfinementCapacity = Math.ceil((confinementOccupancy * 1.1) / 50) * 50;
 
   const netRevenueA = soldA * netSaleA + cowsSold * cowNetSale;
@@ -393,8 +400,16 @@ export function calculateCore(a: Assumptions) {
     routeBInputValid,
     inputErrors,
     survival,
-    entrantsA: soldA / survival,
-    entrantsB: soldB / survival,
+    pastureSurvival,
+    feedlotSurvival,
+    entrantsA,
+    entrantsB,
+    feedlotEntriesA,
+    operatingCostsA,
+    operatingCostsB,
+    preFeedlotCostHead,
+    feedlotVariableCostHead,
+    preSaleCostHeadB,
     mortalityCostHeadA,
     mortalityCostHeadB,
     scale,
@@ -409,6 +424,8 @@ export function calculateCore(a: Assumptions) {
     simultaneousPivotA,
     simultaneousPivotB,
     pasturePotentialA,
+    pastureCandidatesA,
+    pastureEntryCapacityA,
     pasturePotentialB,
     silagePotentialA,
     feedlotPotentialA,

@@ -14,6 +14,7 @@ import {
 import {
   referenceBridge,
   cattleStartupCash,
+  cattleCapitalRequirement,
   pastureRequirements,
   observedGains,
   reviewDefaults,
@@ -65,6 +66,7 @@ function Field({
     <label className="block text-sm">
       <span>{label}</span>
       <NumericInput
+        aria-label={label}
         className="mt-1 bg-white font-mono"
         min={0}
         max={max}
@@ -300,7 +302,7 @@ export function DecisionReview(p: Props) {
                 <TableHead>Rota</TableHead>
                 <TableHead>Margem anual estabilizada</TableHead>
                 <TableHead>Saldo caixa ano 1, após CAPEX</TableHead>
-                <TableHead>Pico de financiamento + reserva</TableHead>
+                <TableHead>Capital: pico ou ciclo completo + reserva</TableHead>
                 <TableHead>Animais ao fim do ano</TableHead>
               </TableRow>
             </TableHeader>
@@ -322,7 +324,7 @@ export function DecisionReview(p: Props) {
                         {money(netCash(cash))}
                       </TableCell>
                       <TableCell className="font-mono">
-                        {money(cash.peakFundingNeed + p.operations.reserveCash)}
+                        {money(cattleCapitalRequirement(p.assumptions, label.startsWith('A') ? 'A' : 'B', cash.peakFundingNeed, p.operations.setupCost, p.operations.reserveCash).required)}
                       </TableCell>
                       <TableCell>{number(cash.closingHeads)} cab</TableCell>
                     </TableRow>
@@ -369,9 +371,10 @@ export function DecisionReview(p: Props) {
           Alimentos, pasto e água · conferir capacidade
         </summary>
         <p className="mt-3 text-sm">
-          Dados sem medição ficam como não informados, não como capacidade
-          comprovada. A oferta mensal usa a distribuição editável abaixo; não é
-          previsão climática.
+          Ao preencher produção, aproveitamento e distribuição mensal válida,
+          o motor limita automaticamente a lotação de A/B/C ao mês mais restritivo.
+          Sem esses dados, a capacidade continua presumida. Sobras não passam
+          automaticamente para o mês seguinte. A distribuição não é previsão climática.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {op('openingSilageTonnesDm', 'Silagem já existente · t MS')}

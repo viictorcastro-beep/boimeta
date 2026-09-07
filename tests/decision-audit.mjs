@@ -83,7 +83,7 @@ test('Editar custo em estresse altera orçamento; classificação preserva total
 test('Mortos são comprados e consomem alimento antes da perda', () => {
   const r = calculateCore(base);
   close(r.entrantsA * r.survival, r.soldA);
-  close(r.silageConsumedDm, r.entrantsA * r.forageDmHead);
+  close(r.silageConsumedDm, r.feedlotEntriesA * r.forageDmHead);
   assert.ok(r.mortalityCostHeadA > 0);
 });
 test('Vagas-dia limitam animais vendidos, inclusive mortalidade', () => {
@@ -93,7 +93,7 @@ test('Vagas-dia limitam animais vendidos, inclusive mortalidade', () => {
     feedlotUtilization: 80,
   });
   close(r.confinementOccupancy, 80);
-  assert.ok(r.soldA <= ((80 * 365) / r.daysFeedlot) * r.survival + 1e-6);
+  assert.ok(r.soldA <= ((80 * 365) / r.daysFeedlot) * r.feedlotSurvival + 1e-6);
 });
 test('Fração de dieta acima de 100% é inválida', () => {
   const r = calculateCore({
