@@ -1,6 +1,7 @@
 'use client';
-import { useId, useState, type ComponentProps } from 'react';
+import { useId, useRef, useState, type ComponentProps } from 'react';
 import { Input } from '@/components/ui/input';
+import { numericBlurValue } from '@/lib/parameter-interaction';
 import {
   boundedNumber,
   formatNumberBr,
@@ -32,6 +33,7 @@ export function NumericInput({
 }: Props) {
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState(false);
+  const dirty = useRef(false);
   const hintId = useId();
   const parsed = editing ? parseNumberBr(draft) : value;
   const invalid =
@@ -39,7 +41,7 @@ export function NumericInput({
     draft.trim() !== '' &&
     (parsed === null || parsed < min || parsed > max);
   return (
-    <span className="inline-flex min-w-0 flex-col">
+    <span className="relative inline-flex min-w-0 flex-col">
       <Input
         {...props}
         title={
@@ -58,23 +60,27 @@ export function NumericInput({
             .join(' ') || undefined
         }
         onFocus={(event) => {
+          dirty.current = false;
           setDraft(formatNumberBr(value));
           setEditing(true);
           onFocus?.(event);
         }}
         onChange={(event) => {
+          dirty.current = true;
           setDraft(event.target.value);
           const next = parseNumberBr(event.target.value);
           if (next !== null && next >= min && next <= max) onValueChange(next);
         }}
         onBlur={(event) => {
-          const next = parseNumberBr(draft);
-          if (next !== null) onValueChange(boundedNumber(next, min, max));
+          const next = numericBlurValue(draft, dirty.current, min, max);
+          if (next !== null) onValueChange(next);
+          dirty.current = false;
           setEditing(false);
           onBlur?.(event);
         }}
         onKeyDown={(event) => {
           if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            dirty.current = true;
             event.preventDefault();
             const next = boundedNumber(
               (parseNumberBr(draft) ?? value) +
@@ -87,6 +93,7 @@ export function NumericInput({
           }
           if (event.key === 'Enter') event.currentTarget.blur();
           if (event.key === 'Escape') {
+            dirty.current = false;
             setDraft(formatNumberBr(value));
             setEditing(false);
           }
@@ -96,10 +103,10 @@ export function NumericInput({
       {editing ? (
         <span
           id={hintId}
-          className="mt-1 text-right text-[10px] text-muted-foreground"
+          className="pointer-events-none absolute inset-x-0 top-full z-20 mt-1 rounded-md border bg-popover p-2 text-right text-[10px] text-popover-foreground shadow-md"
         >
           {invalid
-            ? 'Confira o número e os limites do campo.'
+            ? 'Número inválido ou fora do limite: mantém o último valor válido.'
             : parsed === null
               ? 'Vazio: mantém o último valor.'
               : formatNumberBr(parsed)}

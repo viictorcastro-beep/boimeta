@@ -150,6 +150,20 @@ body { margin: 0; }
 .primary-tabs[data-slot="tabs-list"] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); width: 100%; max-width: 100%; min-width: 0; height: auto; }
 .primary-tabs [data-slot="tabs-trigger"] { min-width: 0; white-space: normal; height: auto; min-height: 44px; }
 .simulator-app input { font-variant-numeric: tabular-nums; }
+/* Default to deliberate taps. Only a wide, mouse-only surface gets a range track.
+   any-pointer covers touchscreen laptops even when a mouse is the primary input. */
+.parameter-stepper { display: flex; align-items: center; justify-content: space-between; gap: 12px; touch-action: pan-y pinch-zoom; }
+.parameter-stepper button { min-width: 44px; min-height: 44px; touch-action: pan-y pinch-zoom; }
+.parameter-mouse-slider { display: none; }
+.parameter-mouse-slider, .parameter-mouse-slider * { touch-action: pan-y pinch-zoom; }
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .parameter-stepper { display: none; }
+  .parameter-mouse-slider { display: block; }
+}
+@media (any-pointer: coarse) {
+  .parameter-stepper { display: flex; }
+  .parameter-mouse-slider { display: none; }
+}
 .simulator-app .text-\[9px\], .simulator-app .text-\[10px\], .simulator-app .text-\[11px\] { font-size: 12px; }
 .app-status { border-bottom: 1px solid #dce5d9; background: #f7f9f4; }
 .app-status > div { max-width: 1540px; margin: auto; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; }

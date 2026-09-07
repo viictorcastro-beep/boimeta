@@ -41,7 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumericInput } from '@/components/numeric-input';
-import { Slider } from '@/components/ui/slider';
+import { ParameterAdjustment } from '@/components/parameter-adjustment';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -286,7 +286,7 @@ function Control({
           <span className="w-10 text-[10px] text-muted-foreground">{suffix}</span>
         </div>
       </div>
-      <Slider aria-label={label} min={min} max={max} step={step} value={[value]} onValueChange={(next) => onChange(Number(typeof next === 'number' ? next : next[0]))} />
+      <ParameterAdjustment label={label} value={value} suffix={suffix} min={min} max={max} step={step} onChange={onChange} />
     </div>
   );
 }

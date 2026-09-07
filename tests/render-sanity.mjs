@@ -11,6 +11,21 @@ const server = await createServer({
 });
 try {
   const { default: Page } = await server.ssrLoadModule('../app/page.tsx');
+  const { ParameterAdjustment } = await server.ssrLoadModule('../components/parameter-adjustment.tsx');
+  const events = [];
+  const adjustment = ParameterAdjustment({ label: 'Teste', value: 400, suffix: 'ha', min: 1, max: 5000, step: 1, onChange: value => events.push(value) });
+  const [stepper, mouseWrapper] = adjustment.props.children;
+  assert.equal(mouseWrapper.props.children.props.thumbAlignment, 'center', 'barra não depende de medir um elemento inicialmente oculto');
+  const [decrease, , increase] = stepper.props.children;
+  assert.equal(increase.props.onPointerDown, undefined, 'não alterar ao começar gesto');
+  increase.props.onClick({currentTarget: {focus: () => events.push('focus')}});
+  assert.deepEqual(events, ['focus', 401], 'encerrar rascunho antes do incremento');
+  events.length = 0;
+  decrease.props.onClick({currentTarget: {focus: () => events.push('focus')}});
+  assert.deepEqual(events, ['focus', 399]);
+  events.length = 0;
+  mouseWrapper.props.children.props.onValueChange([450], {event:{type:'touchmove'}, cancel:()=>events.push('cancel')});
+  assert.deepEqual(events, ['cancel'], 'touch não chega ao modelo');
   const html = renderToString(React.createElement(Page));
   assert.match(html, /BoiMeta/);
   assert.match(html, /Premissas &amp; caixa/);
@@ -22,6 +37,10 @@ try {
   assert.match(html, /value="30\.000\.000"/);
   assert.match(html, /GMD recria · A\/C/);
   assert.match(html, /GMD ciclo no pivô · B/);
+  assert.match(html, /aria-label="Aumentar Área total"/);
+  assert.match(html, /aria-label="Diminuir Capital disponível"/);
+  assert.match(html.replace(/<!--.*?-->/g, ''), /100\.000 R\$/);
+  assert.match(html, /parameter-stepper/);
   assert.doesNotMatch(html, /A vence pelo giro e pela janela complementar/);
   // Base UI inclui scripts de hidratação com Number.isNaN; não são resultados.
   const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
