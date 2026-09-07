@@ -7,6 +7,8 @@ import { MarketCompass } from '@/components/market-compass';
 import { BusinessReview } from '@/components/business-review';
 import { DecisionLab } from '@/components/decision-lab';
 import { ClosedCampaignPanel } from '@/components/closed-campaign';
+import { ProductionCyclePanel } from '@/components/production-cycle';
+import { productionCycles } from '@/lib/production-cycle';
 import { closeCampaign, type CampaignInput } from '@/lib/closed-campaign';
 import { capitalStudy, inverseCropCapital, marginLevers, stockingStudy, feedlotTurningPoints, enterpriseIds, type LabInput } from '@/lib/decision-lab';
 import { capacityActions } from '@/lib/capacity-actions';
@@ -4121,7 +4123,8 @@ export default function Home() {
     silageFirstReleaseDays: operationalInputs.silageFirstReleaseDays,
     silageCutIntervalDays: operationalInputs.silageCutIntervalDays,
   }), [modelAssumptions, animalTimelineInputs.entryDate, animalTimelineInputs.gateValuePerKgLive, operationalInputs]);
-  const closedCampaigns = useMemo(() => (['A', 'B', 'C'] as const).map(route => closeCampaign(campaignInput, route)), [campaignInput]);
+  const closedCampaigns = useMemo(() => activeTab === 'campaign' ? (['A', 'B', 'C'] as const).map(route => closeCampaign(route === 'C' ? { ...campaignInput, a: rearingAssumptions } : campaignInput, route)) : [], [campaignInput, rearingAssumptions, activeTab]);
+  const cycleRows = useMemo(() => productionCycles(modelAssumptions, animalTimelineInputs.gateValuePerKgLive, assumptions.calfCost), [modelAssumptions, animalTimelineInputs.gateValuePerKgLive, assumptions.calfCost]);
   const leaseBurden =
     best.id !== 'none-feasible' && result.landLeaseCost > 0
       ? (result.landLeaseCost /
@@ -4552,6 +4555,14 @@ export default function Home() {
           : 'Validação real — sujeito aos gates e fontes informados',
       ],
       ['Data de exportação', new Date().toLocaleString('pt-BR')],
+      ['CICLO DO ANIMAL E OPERAÇÃO ANUAL CONTÍNUA'],
+      ['Método', 'Ciclo = dias no pasto + dias no cocho. Fluxo anual limitado por capacidade de pasto, silagem e cocho. Não impõe compra diária ou encerramento em 365 dias. Não é caixa do primeiro ano.'],
+      ['Rota', 'Dias/animal', 'Comprados/ano', 'Vendidos/ano', 'Receita/boi vendido R$', 'Custo/boi vendido (rateio anual) R$', 'Margem/boi vendido (rateio anual) R$', 'Receita anual R$', 'Custo anual R$', 'Margem anual R$', 'Margem/ha total/ano R$', 'Extra vacas R$/ano'],
+      ...cycleRows.map(r => [r.route, r.cycleDays, r.entrants, r.sold, r.saleHead, r.costPerSold ?? 'n/d', r.marginPerSold ?? 'n/d', r.annualRevenue, r.annualCost, r.annualMargin, r.marginHa ?? 'n/d', r.extraCowMargin]),
+      ['MEMÓRIA DE CUSTOS ANUAIS', 'Rota', 'Componente', 'Quantidade anual', 'Unidade', 'Custo unitário R$', 'Total anual R$', 'Origem/fórmula'],
+      ...cycleRows.flatMap(r => r.costLines.map(l => ['Custo anual', r.route, l.label, l.quantity, l.unit, l.unitCost, l.total, l.source])),
+      ['Rateio', 'Custo/boi vendido = custos anuais dos bois/bois vendidos; inclui perdas, ociosidade, silagem integral e arrendamento. Vacas, se ativas, são extras separados. Margem por hectare usa toda a área-base. CAPEX, juros e tributos sobre resultado não estão na margem operacional.'],
+      ...(activeTab === 'campaign' ? [
       ['FECHAMENTO INTEGRAL DA CAMPANHA · não é margem anual estabilizada'],
       ['Método', '365 coortes diárias de compras; nenhuma recompra na cauda; acompanhamento até última venda; sem vacas e efluente. Preços/GMD constantes, sem previsão automática. Mortalidade no fim da fase. Milho e outros ingredientes por reposição, sem venda duplicada.'],
       ['Custos de área', 'Manutenção e arrendamento por dias decorridos até encerramento. Um programa de cortes inteiros de silagem, custeado no início. Estoque inicial valorado pelo custo local; sobra final sem receita. CAPEX fora da margem; reserva não é despesa.'],
@@ -4568,6 +4579,7 @@ export default function Home() {
       ['FÓRMULAS', 'Margem = receita - custo operacional; R$/ha/campanha = margem/área total; equivalente anual/ha = margem/área total × 365/dias decorridos. Valores internos não arredondados; não é lucro líquido.'],
       ['CAIXA MENSAL DA CAMPANHA', 'Rota', 'Mês', 'Entrada R$', 'Saída R$', 'Saldo do mês R$', 'Acumulado R$'],
       ...closedCampaigns.flatMap(c => c.result?.cash.rows.map(row => ['Caixa', c.route, row.month, row.inflow, row.outflow, row.net, row.cumulative]) ?? []),
+      ] : []),
       ['Aviso', 'Ferramenta de exploração de cenários. Não substitui projeto agronômico, hidráulico, zootécnico, tributário, jurídico ou de crédito.'],
       ['Uso de dados de mercado', 'Referências públicas com atribuição. Confirme direitos de reutilização antes de uso comercial ou redistribuição.'],
       ['RADAR DE MERCADO', 'conab-weekly-v1 · descritivo; não extrapola preços. CONAB semanal por UF, fonte: https://consultaprecosdemercado.conab.gov.br/'],
@@ -5224,12 +5236,10 @@ export default function Home() {
                 <TabsTrigger className="px-3 py-2" value="audit"><FileText /> Validações</TabsTrigger>
                 <TabsTrigger className="px-3 py-2" value="report"><FileText /> Relatório</TabsTrigger>
               </TabsList>
-              <details className="relative rounded-xl border border-border/70 bg-card px-3 py-2 shadow-sm"><summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Estudos detalhados</summary><div className="mt-3 grid min-w-56 gap-1">{([['viability', 'Capital e viabilidade'], ['decision', 'Decisão validada'], ['operations', 'Operação & caixa'], ['dimension', 'Dimensionamento'], ['allocation', 'Rebanho & alocação'], ['compare', 'Comparar usos'], ['costs', 'Custos detalhados'], ['sensitivity', 'Pontos de equilíbrio'], ['futures', 'Mercado futuro'], ['strategy', 'Ciclo & mix'], ['evidence', 'Evidências']] as const).map(([tab, label]) => <button className={`rounded-lg px-3 py-2 text-left text-sm hover:bg-[#edf3e8] ${activeTab === tab ? 'bg-[#edf3e8] font-semibold text-[#315a3e]' : ''}`} key={tab} onClick={(event) => { setActiveTab(tab); event.currentTarget.closest('details')?.removeAttribute('open'); }} type="button">{label}</button>)}</div></details>
+              <details className="relative rounded-xl border border-border/70 bg-card px-3 py-2 shadow-sm"><summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Estudos detalhados</summary><div className="mt-3 grid min-w-56 gap-1">{([['viability', 'Capital e viabilidade'], ['decision', 'Decisão validada'], ['operations', 'Operação & caixa'], ['dimension', 'Dimensionamento'], ['allocation', 'Rebanho & alocação'], ['compare', 'Comparar usos'], ['costs', 'Custos detalhados'], ['sensitivity', 'Pontos de equilíbrio'], ['futures', 'Mercado futuro'], ['strategy', 'Ciclo & mix'], ['campaign', 'Encerramento de compras · opcional'], ['evidence', 'Evidências']] as const).map(([tab, label]) => <button className={`rounded-lg px-3 py-2 text-left text-sm hover:bg-[#edf3e8] ${activeTab === tab ? 'bg-[#edf3e8] font-semibold text-[#315a3e]' : ''}`} key={tab} onClick={(event) => { setActiveTab(tab); event.currentTarget.closest('details')?.removeAttribute('open'); }} type="button">{label}</button>)}</div></details>
             </div>
 
             <TabsContent value="quick" className="space-y-5">
-              <ClosedCampaignPanel campaigns={closedCampaigns} budget={strategyCapitalLimit} cowsActive={assumptions.includeCows} onExcludeCows={() => update('includeCows', false)} />
-              <details className="rounded-2xl border bg-card p-4"><summary className="cursor-pointer py-2 font-semibold">Comparação anual em operação contínua · pecuária e agricultura</summary><div className="mt-4 space-y-5">
               <div className="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 text-sm">
                 <p>Margens anuais de regime pleno · não são lucro líquido nem caixa do primeiro ano.</p>
                 <Button variant="outline" onClick={() => openEditor('farm')}>Ajustar cenário</Button>
@@ -5253,6 +5263,7 @@ export default function Home() {
                 <p><strong>Pasto: {localPasture.limited ? 'lotação limitada pela oferta informada' : localPasture.known ? 'capacidade calculada com os dados informados' : 'capacidade ainda presumida'}.</strong> {result.inputErrors.length ? 'Há premissas inválidas: confira os avisos no topo.' : 'A comparação não dispensa caixa, alimento e validação de campo.'}</p>
                 <button type="button" className="mt-2 min-h-11 font-semibold underline" onClick={() => openAnalysisTab('audit')}>Ver o que precisa ser validado</button>
               </div>
+              <ProductionCyclePanel rows={cycleRows} />
               <Panel>
                 <SectionTitle eyebrow={`Comparação em tempo real · ${int.format(assumptions.totalArea)} ha`} title="O que acontece em cada alternativa" text="Todas usam a mesma área-base e as premissas atuais. O primeiro lugar é o maior valor modelado por hectare; a diferença negativa mostra quanto cada alternativa está atrás." />
                 <div className="overflow-x-auto"><Table><TableHeader><TableRow className="bg-[#f4f7f1]"><TableHead className="pl-5">Alternativa</TableHead><TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Custo</TableHead><TableHead className="text-right">Margem total</TableHead><TableHead className="text-right">Margem/ha</TableHead><TableHead className="text-right">Diferença para líder</TableHead><TableHead className="pr-5 text-right">Estado</TableHead></TableRow></TableHeader><TableBody>{ranking.map((row, index) => <TableRow className={row.id === best.id ? 'bg-[#f2f7da]/65' : ''} key={`quick-row-${row.id}`}><TableCell className="pl-5"><span className="font-semibold">{index + 1}. {row.label}</span><p className="mt-1 text-[9px] text-muted-foreground">{row.production}</p></TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.revenue)}</TableCell><TableCell className="text-right font-mono text-xs">{moneyCompact(row.cost)}</TableCell><TableCell className={`text-right font-mono text-xs font-semibold ${row.margin >= 0 ? 'text-[#2d6c45]' : 'text-[#9b4b2f]'}`}>{moneyCompact(row.margin)}</TableCell><TableCell className="text-right font-mono text-xs">{brl0.format(row.marginHa)}</TableCell><TableCell className="text-right font-mono text-xs">{row.id === best.id ? 'líder no orçamento' : `${brl0.format(row.marginHa - best.marginHa)}/ha`}</TableCell><TableCell className="pr-5 text-right"><Badge variant="outline">{!row.rankable ? 'restrição de calendário ou balanço' : !row.capitalFeasible ? 'fora do orçamento' : row.evidenceLevel === 'preflight-validated' ? 'pré-validado' : 'cabe no capital estimado'}</Badge></TableCell></TableRow>)}</TableBody></Table></div>
@@ -5300,7 +5311,11 @@ export default function Home() {
                 </Panel>
               </div>
               </div></details>
-              </div></details>
+            </TabsContent>
+
+            <TabsContent value="campaign" className="space-y-5">
+              <p className="rounded-xl border bg-amber-50 p-4 text-sm">Estudo opcional de encerramento: esta hipótese para as compras depois de 365 dias. Não representa o funcionamento normal da fazenda e não determina o ranking anual.</p>
+              <ClosedCampaignPanel campaigns={closedCampaigns} budget={strategyCapitalLimit} cowsActive={assumptions.includeCows} onExcludeCows={() => update('includeCows', false)} />
             </TabsContent>
 
             <TabsContent value="market" className="space-y-5" keepMounted>
@@ -6228,7 +6243,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="report" className="space-y-5" id="report-output">
-              <ClosedCampaignPanel campaigns={closedCampaigns} budget={strategyCapitalLimit} cowsActive={assumptions.includeCows} report />
+              <ProductionCyclePanel rows={cycleRows} report />
               <Panel><SectionTitle eyebrow="Mesmo capital · área parcial" title="Escalas que o orçamento permite estudar" text="Margens anuais de regime pleno, não lucro líquido ou retorno do primeiro ano. O quadro geral compara a área inteira; aqui a escala pode diminuir para caber no caixa." /><div className="p-5"><Table><TableHeader><TableRow><TableHead>Alternativa</TableHead><TableHead>Área testada de maior margem</TableHead><TableHead>Margem anual</TableHead><TableHead>Capital exigido</TableHead><TableHead>Capital para área inteira</TableHead></TableRow></TableHeader><TableBody>{reportCapitalStudy?.rows.map(r => <TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{one.format(r.best.area)} ha</TableCell><TableCell>{brl0.format(r.best.margin)}</TableCell><TableCell>{brl0.format(r.best.capital)}</TableCell><TableCell>{brl0.format(r.full.capital)}</TableCell></TableRow>)}</TableBody></Table><p className="mt-3 text-sm text-muted-foreground">Busca discreta, não ótimo global. Arrendamento ocioso, CAPEX e reserva mantidos. Não operar pode evitar perda incremental. CSV inclui alavancas, lotação, equivalência de custeio e preços de indiferença do cocho.</p></div></Panel>
               {scenarioMode === 'exploration' ? <div className="rounded-2xl border-2 border-[#d49e37]/45 bg-[#fff4d8] p-4 text-sm font-semibold text-[#6b4a12]">DEMONSTRAÇÃO — este relatório contém preços, capacidades, calendários e confirmações ilustrativas. Não use como recomendação, orçamento ou aprovação de investimento.</div> : null}
               <Panel>

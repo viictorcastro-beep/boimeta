@@ -20,7 +20,7 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 1. Em **Seu cenário**, comece por área e capital. Confira a data-base e só abra os outros grupos se quiser alterar suas premissas.
    A base produtiva de 400 ha é editável; não é uma meta de margem. O radar busca referências datadas sem sobrescrever seu estudo.
-2. Em **Resultado**, confira primeiro o fechamento integral da campanha: 365 dias de compras escalonadas, depois nenhuma compra nova, acompanhando todos os bois até a venda. Margem acumulada, dias, equivalente anual e capital aparecem separados. Novas simulações não incluem vacas de oportunidade.
+2. Em **Resultado**, compare a operação anual de regime pleno. O painel **Ciclo do animal e resultado da operação** separa dias por animal, margem por boi vendido com rateio anual e volume vendido/ano. Não impõe compras diárias nem encerra a fazenda em uma data artificial. Novas simulações não incluem vacas de oportunidade.
 3. Confira o alimento produzido e consumido, a área adicional do milho, os lotes, a capacidade e o caixa.
 4. Consulte referências semanais CONAB por UF quando disponíveis. Aplicar uma referência é uma decisão explícita; editar um preço transforma-o em hipótese.
 5. Teste preço, produtividade, dieta, lotação, arrendamento e capital. Resultados negativos são preservados.
@@ -29,7 +29,7 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 8. A aba de relatório exporta CSV e permite impressão. O JSON restaura o cenário; o CSV documenta resultados.
 9. Abra **Validações** para conferir primeiro ano, reserva/implantação e requisitos físicos. A reconciliação histórica permanece recolhida, não como meta de margem.
 10. Em **Validações → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
-11. Abra **Resultado → Comparação anual em operação contínua** para comparar pecuária e agricultura e a maior margem anual entre alternativas que cabem no capital estimado. Não misture esse indicador com a margem da campanha. Em **Estudos detalhados → Ciclo & mix**, calcule um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
+11. **Resultado** compara pecuária e agricultura e destaca a maior margem anual entre alternativas que cabem no capital estimado. Em **Estudos detalhados → Encerramento de compras · opcional**, estude separadamente a hipótese de parar de comprar após 365 dias. Ela não determina o ranking anual. Em **Ciclo & mix**, calcule um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
 12. Compare **A: recria + cocho**, **B: ciclo no pivô** e **C: recria e venda do magro**. Informe o preço líquido local do magro; não é a cotação da arroba de boi gordo. O GMD de recria A/C e o do ciclo B têm controles separados.
 13. Valores usam português brasileiro: `30.000.000`, `1.234,56`, `0,78`. É possível colar `R$ 1.234,56`. Um campo vazio não zera silenciosamente a premissa; use vírgula decimal, Enter para concluir ou as setas para incrementar.
 14. Em **Validações → Alimentos, pasto e água**, informe produção de MS e aproveitamento. Esses dados limitam A/B/C; a distribuição mensal limita o fluxo contínuo pelo mês mais restritivo. Não há carregamento automático de sobra de capim entre meses.
@@ -39,9 +39,9 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 ### Caixa, lotação e alavancas
 
-Em **Resultado → Comparação anual em operação contínua → O que muda a decisão**, use **Mesmo capital** para comparar escalas parciais, **Alavancas de margem** para testar uma mudança por vez e **Lotação e área** para separar UA/ha de pasto da média da fazenda. O quadro geral continua comparando a área inteira. A diferença entre esses escopos pode mudar a primeira colocação.
+Em **Resultado → O que muda a decisão**, use **Mesmo capital** para comparar escalas parciais, **Alavancas de margem** para testar uma mudança por vez e **Lotação e área** para separar UA/ha de pasto da média da fazenda. O quadro geral continua comparando a área inteira. A diferença entre esses escopos pode mudar a primeira colocação.
 
-O fechamento da campanha mantém custos e alimentação depois de 365 dias, sem tratar estoque animal como venda. Equivalente anual não é lucro líquido nem operação estabilizada. [Método, hipóteses e testes do fechamento](docs/CAMPANHA_COMPLETA_2026-09-07.5.md).
+O estudo opcional de encerramento mantém custos e alimentação depois de 365 dias, sem tratar estoque animal como venda. Seu equivalente anual não é o resultado da operação estabilizada. [Correção da leitura ciclo/ano e contraprova do caso](docs/CICLO_E_ANO_2026-09-07.6.md). A memória anual com quantidade × custo unitário continua em Resultado e Relatório; o CSV padrão usa essa mesma base, sem misturar a campanha opcional.
 
 A rota A mostra a melhor proporção pasto/silagem testada e os preços de empate com B/C, sem prometer preço futuro ou retorno ao investimento. A inversa calcula a área equivalente de custeio agrícola, mas só atribui margem à área disponível. Informe custos adicionais de intensificação; aumentar UA sozinho não cria capim, energia ou desempenho. O relatório CSV contém os estudos e suas limitações. Veja a [auditoria numérica e prioridades](DECISAO_CAPITAL_2026-09-07.4.md).
 
