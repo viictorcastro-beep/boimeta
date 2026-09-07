@@ -273,7 +273,7 @@ export function DecisionReview(p: Props) {
         </details>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button variant="outline" onClick={p.onResetReference}>
-            Usar base produtiva de 400 ha
+            Carregar parâmetros das fotos · 400 ha
           </Button>
           <p className="text-sm text-muted-foreground">
             Salve seu cenário antes. Carregar a referência não elimina as

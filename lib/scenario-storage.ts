@@ -12,7 +12,7 @@ export function validateScenario<T>(document: unknown, template: T): T {
   if (!document || typeof document !== 'object' ||
     (document as { schema?: number }).schema !== SCENARIO_SCHEMA) throw new Error('Versão de cenário incompatível.');
   const model = (document as { model?: unknown }).model;
-  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3', '2026-09-07.4', '2026-09-07.5', '2026-09-07.6'].includes(model)))
+  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3', '2026-09-07.4', '2026-09-07.5', '2026-09-07.6', '2026-09-07.7'].includes(model)))
     throw new Error('Versão de cálculo não suportada. Preserve o arquivo e importe com a versão correspondente.');
   const walk = (value: unknown, base: unknown, key = ''): unknown => {
     if (typeof base === 'number') {
@@ -41,6 +41,7 @@ export function validateScenario<T>(document: unknown, template: T): T {
     }
     if (typeof base === 'string') {
       if (typeof value !== 'string' || value.length > 4000) throw new Error('Texto inválido: ' + key);
+      if (key === 'cowCostBasis' && !['reported-per-sold', 'purchases-with-losses'].includes(value)) throw new Error('Base do custo das vacas inválida.');
       if (key === 'id' && value !== base) throw new Error('Identificador incompatível.');
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const date = new Date(value + 'T12:00:00Z');
@@ -73,7 +74,8 @@ export function validateScenario<T>(document: unknown, template: T): T {
   const inputData = original && typeof original === 'object' ? { ...original } : original;
   if (inputData?.assumptions && typeof inputData.assumptions === 'object') {
     const assumptions = inputData.assumptions as Record<string, unknown>;
-    inputData.assumptions = { ...assumptions, pastureExtraCostHa: assumptions.pastureExtraCostHa ?? 0 };
+    inputData.assumptions = { ...assumptions, pastureExtraCostHa: assumptions.pastureExtraCostHa ?? 0,
+      cowCostBasis: assumptions.cowCostBasis ?? 'purchases-with-losses' };
   }
   if (inputData && Array.isArray(inputData.crops)) {
     const fixed: Record<string, number> = { 'soy-irrigated': 1000, 'corn-irrigated': 1100, 'cotton-irrigated': 1946.12592 };

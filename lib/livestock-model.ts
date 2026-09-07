@@ -30,6 +30,7 @@ export type Assumptions = {
   includeCows: boolean;
   cowSaleArroba: number;
   cowBuyCost: number;
+  cowCostBasis?: 'reported-per-sold' | 'purchases-with-losses';
   includeEffluentSavings: boolean;
   effluentArea: number;
   effluentDepthMm: number;
@@ -128,7 +129,10 @@ export const defaultAssumptions: Assumptions = {
   terminalValue: 0,
 };
 
-const cowDeduction = 1 - 5_034.69 / (((530 * 0.48) / 15) * 300);
+// Receita derivada do slide (4.382,82 + 651,87), não preço/peso/rendimento
+// independentemente comprovados. 300 é apenas o índice de escala da base.
+export const COW_PHOTO_REFERENCE = { netSaleHead: 5034.69, cashCostHead: 4382.82,
+  buyHead: 3673.33, saleIndex: 300, soldPerSilageHa: 7.98 } as const;
 
 export function annuityFactor(ratePercent: number, years: number) {
   const rate = ratePercent / 100;
@@ -326,10 +330,15 @@ export function calculateCore(a: Assumptions) {
   // silage hectares. They do not create another 25% of invisible land.
   const cowWindowArea = silageArea;
   const cowsSold = a.includeCows ? cowWindowArea * 8 * 0.9975 : 0;
-  const cowNetSale =
-    ((530 * 0.48) / 15) * a.cowSaleArroba * (1 - cowDeduction);
+  const cowNetSale = COW_PHOTO_REFERENCE.netSaleHead * a.cowSaleArroba / COW_PHOTO_REFERENCE.saleIndex;
   const cowOtherCashCost = 50 + 84.33 + 45 + 19.96 + 510.19;
-  const cowCashCost = (a.cowBuyCost + (cowOtherCashCost - 19.96) * variableFactor) / 0.9975 + 19.96 * variableFactor;
+  const cowCostBasis = a.cowCostBasis ?? 'purchases-with-losses';
+  // No orçamento transcrito, o custo já é informado por vendida: não aplicar
+  // outra mortalidade sem saber se está embutida. No estudo físico anterior,
+  // compras e perdas continuam custeadas. Não somar os dois tratamentos.
+  const cowCashCost = cowCostBasis === 'reported-per-sold'
+    ? a.cowBuyCost + (COW_PHOTO_REFERENCE.cashCostHead - COW_PHOTO_REFERENCE.buyHead) * variableFactor
+    : (a.cowBuyCost + (cowOtherCashCost - 19.96) * variableFactor) / 0.9975 + 19.96 * variableFactor;
   const cowCashMargin = cowNetSale - cowCashCost;
 
   const fertilizerSavingsPerHa =
@@ -460,6 +469,7 @@ export function calculateCore(a: Assumptions) {
     cowNetSale,
     cowCashCost,
     cowCashMargin,
+    cowCostBasis,
     fertilizerSavingsPerHa,
     fertilizerSavings,
     includedFertilizerSavings,

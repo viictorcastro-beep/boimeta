@@ -64,6 +64,8 @@ A rota A mostra a melhor proporção pasto/silagem testada e os preços de empat
 
 ## Desenvolvimento
 
+Base inicial e receitas das vacas: [parâmetros das fotos · 2026-09-07.7](docs/BASE_FOTOS_2026-09-07.7.md). O botão **Base das fotos · 400 ha** carrega preços históricos e dieta manual; mantém o capital informado e não altera o cenário salvo no navegador. Valores ausentes das fotos são identificados como hipóteses complementares, não como reprodução exata da planilha original.
+
 Registro da rodada: [auditoria de prioridades · 2026-09-07.1](docs/PRIORIDADES_2026-09-07.1.md).
 
 Reorganização do preenchimento: [guia e auditoria · 2026-09-07.3](docs/PREENCHIMENTO_2026-09-07.3.md).
@@ -79,6 +81,7 @@ pnpm test:market
 pnpm test:business
 pnpm test:controls
 pnpm test:lab
+pnpm test:reference
 pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit

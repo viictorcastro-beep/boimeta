@@ -58,6 +58,8 @@ export function productionCycles(a: Assumptions, gateNetPrice: number, calfCostC
       pastureArea, totalArea: a.totalArea, stockingUa: a.stockingUa,
       theoreticalPastureEntries: pastureArea * a.stockingUa * 450 / ((a.entryWeight + pastureExit) / 2) * 365 / Math.max(1, pastureDays),
       entrants, feedEntrants, sold, cows, extraCowMargin: cows * c.cowCashMargin, cowRevenue: cows * c.cowNetSale,
+      cowCost: cows * c.cowCashCost, cowNetSaleHead: c.cowNetSale, cowCostHead: c.cowCashCost,
+      cowCostBasis: c.cowCostBasis, cowWindowArea: route === 'A' ? c.cowWindowArea : 0,
       saleHead, bullCost, costPerSold: sold > 0 ? bullCost / sold : null,
       marginPerSold: sold > 0 ? saleHead - bullCost / sold : null,
       revenuePerEntrant: entrants > 0 ? sold * saleHead / entrants : null,

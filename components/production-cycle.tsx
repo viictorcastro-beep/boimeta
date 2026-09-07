@@ -21,9 +21,21 @@ export function ProductionCyclePanel({ rows, report = false }: { rows: Productio
           <div><dt>Margem operacional anual{r.cows > 0 ? ' com extras' : ''}</dt><dd className="font-mono font-semibold">{value(r.annualMargin)}</dd></div>
         </dl>
         {r.cycleDays > 365 && <p className="mt-3 text-sm text-amber-900">O ciclo ultrapassa um ano. A venda só ocorre ao final; produção de regime pleno não é caixa do primeiro ano.</p>}
-        {r.cows > 0 && <p className="mt-3 text-sm text-amber-900">Vacas ainda ativadas neste cenário: extra anual de {value(r.extraCowMargin)}, separado da margem por boi.</p>}
+        {r.cows > 0 && <p className="mt-3 text-sm text-amber-900">Inclui {n.format(r.cows)} vacas no extra anual. A margem por boi acima não inclui as vacas.</p>}
       </>}
     </article>)}</div>
+    {rows.filter(r => r.route === 'A' && r.cows > 0).map(r => <section key="cow-revenue" aria-label="Receita e custos das vacas" className="mt-4 rounded-xl border bg-muted/30 p-4">
+      <h3 className="font-semibold">Vacas de oportunidade · receita adicional de A</h3>
+      <p className="mt-2 text-sm">{n.format(r.cows)} vendidas/ano na janela de {n.format(r.cowWindowArea)} ha pós-silagem. Não são matrizes de cria nem novos hectares.</p>
+      <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div><dt className="text-sm">Receita líquida das vacas</dt><dd className="font-mono font-semibold">{value(r.cowRevenue)}</dd><p className="text-xs text-muted-foreground">{value(r.cowNetSaleHead)}/vendida</p></div>
+        <div><dt className="text-sm">Custo de caixa das vacas</dt><dd className="font-mono font-semibold">{value(r.cowCost)}</dd><p className="text-xs text-muted-foreground">{value(r.cowCostHead)}/vendida</p></div>
+        <div><dt className="text-sm">Margem adicional das vacas</dt><dd className="font-mono font-semibold">{value(r.extraCowMargin)}</dd><p className="text-xs text-muted-foreground">Receita menos custo; já incluída uma vez em A</p></div>
+      </dl>
+      <p className="mt-3 text-sm text-muted-foreground">{r.cowCostBasis === 'reported-per-sold'
+        ? 'Base das fotos: custo agregado por vaca vendida. Compras, perdas e calendário não estão reconciliados; não se aplica uma segunda perda sobre esse custo. Receita de referência derivada: R$ 4.382,82 + R$ 651,87 = R$ 5.034,69/cab.'
+        : 'Base operacional: custos das compras e perdas rateados pelos animais vendidos. A hipótese de perda é 0,25%; o custo dos animais perdidos não desaparece.'} A janela pós-silagem precisa ser validada antes de executar. A receita das vacas não é adicionada novamente à margem.</p>
+    </section>)}
     <p className="mt-4 text-sm text-muted-foreground">A margem por boi inclui rateio dos custos anuais de toda a área e das perdas. Não é orçamento de um lote isolado. Não multiplique essa margem por 365/dias: o resultado anual é margem por vendido × animais vendidos no ano, mais eventuais extras identificados. CAPEX, juros e tributos sobre o resultado continuam fora da margem operacional.</p>
     <details open={report || undefined} className="mt-4 rounded-xl border p-4">
       <summary className="cursor-pointer font-semibold">Memória de cálculo · do animal ao ano da fazenda</summary>

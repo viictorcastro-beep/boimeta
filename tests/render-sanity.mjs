@@ -54,7 +54,14 @@ try {
   assert.match(html, /Seu cenário/);
   for (const group of ['Fazenda e capital', 'Gado e desempenho', 'Alimentação e cocho', 'Lavouras irrigadas', 'Investimentos e extras']) assert.match(html, new RegExp(group));
   assert.match(html, /O mercado está ajudando ou pressionando/);
-  assert.match(html, /Usar base produtiva/);
+  assert.match(html, /Usar parâmetros das fotos/);
+  assert.match(html, /Origem da base de 400 ha/);
+  assert.match(html, /Vacas de oportunidade · receita adicional de A/);
+  assert.match(html.replace(/<!--.*?-->/g, ''), /4\.017\.682,62/);
+  assert.match(html.replace(/<!--.*?-->/g, ''), /3\.497\.490,36/);
+  assert.match(html.replace(/<!--.*?-->/g, ''), /520\.192,26/);
+  assert.match(html, /não entra como receita/);
+  assert.match(html, /Não é preço de hoje/);
   assert.match(html, /Ver capital e viabilidade do cocho/);
   assert.match(html, /O que muda a decisão/);
   assert.match(html, /Mesmo capital/);
