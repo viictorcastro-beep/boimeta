@@ -1,4 +1,4 @@
-type Product = 'soy' | 'corn' | 'cotton' | 'cattle';
+export type Product = 'soy' | 'corn' | 'cotton' | 'cattle';
 
 type RawRow = {
   nomeProduto?: string | null;
@@ -8,7 +8,7 @@ type RawRow = {
   valor?: string | number | null;
 };
 
-type ConabPrice = {
+export type ConabPrice = {
   source: 'CONAB';
   product: Product;
   description: string;
@@ -81,16 +81,16 @@ export function parsePeriod(raw: string) {
 
 function classify(name: string) {
   const normalized = normalizedName(name);
-  if (/^SOJA EM GRAOS\b/.test(normalized)) {
+  if (/^SOJA EM GRAOS\b/.test(normalized) && /\(60 KG\)/.test(normalized)) {
     return { product: 'soy' as const, displayUnit: 'R$/sc 60 kg' };
   }
-  if (/^MILHO EM GRAOS\b/.test(normalized)) {
+  if (/^MILHO EM GRAOS\b/.test(normalized) && /\(60 KG\)/.test(normalized)) {
     return { product: 'corn' as const, displayUnit: 'R$/sc 60 kg' };
   }
-  if (/^ALGODAO EM PLUMA TIPO BASICO\b/.test(normalized)) {
+  if (/^ALGODAO EM PLUMA TIPO BASICO\b/.test(normalized) && /\(15 KG\)/.test(normalized)) {
     return { product: 'cotton' as const, displayUnit: 'R$/15 kg de pluma' };
   }
-  if (/^BOI GORDO\b/.test(normalized)) {
+  if (/^BOI GORDO\b/.test(normalized) && /\(15 KG\)/.test(normalized)) {
     return { product: 'cattle' as const, displayUnit: 'R$/@ de 15 kg' };
   }
   return undefined;
@@ -135,13 +135,13 @@ export function parseConab(input: unknown) {
   return output;
 }
 
-function dateInSaoPaulo() {
+function dateInSaoPaulo(asOf = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(new Date());
+  }).formatToParts(asOf);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return new Date(`${values.year}-${values.month}-${values.day}T12:00:00-03:00`);
 }
@@ -155,8 +155,8 @@ function formatConabDate(date: Date) {
   }).format(date);
 }
 
-function completedWeek(weeksAgo = 0) {
-  const today = dateInSaoPaulo();
+export function completedWeek(weeksAgo = 0, asOf = new Date()) {
+  const today = dateInSaoPaulo(asOf);
   const day = today.getUTCDay();
   const daysSinceFriday = day === 0 ? 2 : day === 6 ? 1 : day + 2;
   const friday = new Date(today);
@@ -167,7 +167,9 @@ function completedWeek(weeksAgo = 0) {
 }
 
 async function requestWeek(uf: string, weeksAgo: number) {
-  const period = completedWeek(weeksAgo);
+  // A fonte permite no máximo quatro semanas por consulta.
+  const period = completedWeek(weeksAgo + 3).split(' até ')[0] + ' até ' +
+    completedWeek(weeksAgo).split(' até ')[1];
   const response = await fetch(CONAB_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -195,19 +197,20 @@ export async function fetchConabPrices(uf = 'BA') {
   if (!VALID_UFS.has(uf)) throw new Error('UF inválida.');
   const products: Product[] = ['soy', 'corn', 'cotton', 'cattle'];
   const latest = new Map<Product, ConabPrice>();
+  const history: ConabPrice[] = [];
   const searchedPeriods: string[] = [];
   const warnings: string[] = [];
-  const deadline = Date.now() + 24_000;
-  for (let weeksAgo = 0; weeksAgo < 4 && Date.now() < deadline; weeksAgo++) {
+  const deadline = Date.now() + 36_000;
+  for (let weeksAgo = 0; weeksAgo < 12 && Date.now() < deadline; weeksAgo += 4) {
     try {
       const result = await requestWeek(uf, weeksAgo);
       searchedPeriods.push(result.period);
       for (const quote of result.quotes) {
         if (quote.uf !== uf || !normalizedName(quote.level).includes('PRODUTOR')) continue;
+        history.push(quote);
         const previous = latest.get(quote.product);
         if (!previous || previous.sourceDate < quote.sourceDate) latest.set(quote.product, quote);
       }
-      if (latest.size === products.length) break;
     } catch (error) {
       warnings.push(error instanceof Error ? error.message : 'Consulta parcial indisponível.');
     }
@@ -218,10 +221,9 @@ export async function fetchConabPrices(uf = 'BA') {
     source: 'CONAB · Pesquisa de Preços Agrícolas',
     sourceUrl: 'https://consultaprecosdemercado.conab.gov.br/',
     uf, searchedPeriods, fetchedAt: new Date().toISOString(),
-    quotes: [...latest.values()], missingProducts, warnings,
+    quotes: [...latest.values()], history, missingProducts, warnings,
     completeness: missingProducts.length ? 'partial' : 'complete',
     frequency: 'weekly',
     legalNote: 'Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.'
   };
 }
-

@@ -17,6 +17,7 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 ## Como utilizar
 
 1. Ajuste área, preço de compra/venda, pesos e GMD na tela inicial.
+   A base produtiva de 400 ha é editável; não é uma meta de margem. O radar busca referências datadas sem sobrescrever seu estudo.
 2. Compare margem anual, margem por hectare e margem sobre custo operacional. Esta última **não é ROI sobre patrimônio nem lucro líquido**.
 3. Confira o alimento produzido e consumido, a área adicional do milho, os lotes, a capacidade e o caixa.
 4. Consulte referências semanais CONAB por UF quando disponíveis. Aplicar uma referência é uma decisão explícita; editar um preço transforma-o em hipótese.
@@ -52,6 +53,7 @@ pnpm install --frozen-lockfile
 pnpm test:model
 pnpm test:regression
 pnpm test:decision
+pnpm test:market
 pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit
@@ -70,7 +72,7 @@ O workflow `.github/workflows/pages.yml` testa, atualiza referências e publica 
 - Outro repositório: o workflow usa automaticamente o nome do repositório.
 - Site raiz `usuario.github.io`: ajuste `PAGES_BASE_PATH` para `/`.
 - Não hospede `dist/client` do build Sites sozinho; ele depende do servidor.
-- A atualização está programada para dias úteis, às 12h30 UTC. É uma tentativa periódica; o GitHub pode atrasar/desativar agendas por inatividade.
+- A atualização está programada para dias úteis, às 12h30 UTC. A janela de 12 semanas avança com a data; o histórico acumula até 104 semanas. O workflow versiona dados/registro de tentativa em main, evitando depender de cache e mitigando inatividade. É melhor esforço: GitHub pode atrasar/desativar a agenda se ela deixar de funcionar.
 - Cada observação preserva data e praça. Falha da fonte mantém o último arquivo válido, sem rebatizá-lo como preço de hoje.
 - Sem preço válido, a simulação manual continua disponível.
 
@@ -91,3 +93,5 @@ O repositório não concede licença ampla de reutilização do código por padr
 Veja [a auditoria desta versão](docs/AUDITORIA_PUBLICA_2026-09-06.md) para correções e limitações.
 
 Veja [o guia da versão 2026-09-06.2](docs/DECISAO_2026-09-06.2.md) para memória da referência, funcionalidades novas e pendências priorizadas.
+
+Veja [a versão 2026-09-06.3 — mercado e atualização contínua](docs/MERCADO_2026-09-06.3.md) para a janela móvel, sinais descritivos, ações explícitas de preço e limites.

@@ -1,1 +1,104 @@
-{"uf":"AL","quotes":[],"error":"Sem referência publicada para esta UF. Use os preços manuais da simulação."}
+{
+  "source": "CONAB · Pesquisa de Preços Agrícolas",
+  "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
+  "uf": "AL",
+  "searchedPeriods": [
+    "10/08/2026 até 04/09/2026",
+    "13/07/2026 até 07/08/2026",
+    "15/06/2026 até 10/07/2026"
+  ],
+  "fetchedAt": "2026-09-07T02:30:27.836Z",
+  "quotes": [
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-07-13",
+      "periodEnd": "2026-07-17",
+      "sourceDate": "2026-07-17",
+      "rawPeriod": "13/07/26 a 17/07/26",
+      "value": 80
+    }
+  ],
+  "history": [
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-06-15",
+      "periodEnd": "2026-06-19",
+      "sourceDate": "2026-06-19",
+      "rawPeriod": "15/06/26 a 19/06/26",
+      "value": 70.5
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-06-22",
+      "periodEnd": "2026-06-26",
+      "sourceDate": "2026-06-26",
+      "rawPeriod": "22/06/26 a 26/06/26",
+      "value": 71
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-06-29",
+      "periodEnd": "2026-07-03",
+      "sourceDate": "2026-07-03",
+      "rawPeriod": "29/06/26 a 03/07/26",
+      "value": 75
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-07-06",
+      "periodEnd": "2026-07-10",
+      "sourceDate": "2026-07-10",
+      "rawPeriod": "06/07/26 a 10/07/26",
+      "value": 80
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AL",
+      "level": "PRODUTOR",
+      "periodStart": "2026-07-13",
+      "periodEnd": "2026-07-17",
+      "sourceDate": "2026-07-17",
+      "rawPeriod": "13/07/26 a 17/07/26",
+      "value": 80
+    }
+  ],
+  "missingProducts": [
+    "soy",
+    "corn",
+    "cotton",
+    "cattle"
+  ],
+  "warnings": [],
+  "completeness": "partial",
+  "frequency": "weekly",
+  "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
+  "delivery": "scheduled-snapshot"
+}

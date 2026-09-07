@@ -22,7 +22,10 @@ export function pwaBuild(): Plugin {
       const hash = createHash('sha256');
       hash.update(readFileSync(new URL('../pages/index.html', import.meta.url)));
       for (const value of Object.values(bundle)) hash.update(value.type === 'chunk' ? value.code : value.source);
-      for (const name of publicFiles) hash.update(readFileSync(new URL(name, publicRoot)));
+      // Preços usam cache de dados separado: uma coleta não exige reinstalar o app.
+      for (const name of publicFiles.filter(name => !name.startsWith('market-prices/'))) {
+        hash.update(readFileSync(new URL(name, publicRoot)));
+      }
       const template = readFileSync(fileURLToPath(new URL('../pages/service-worker.js', import.meta.url)), 'utf8');
       hash.update(template).update(JSON.stringify(manifest));
       const files = [...new Set(['index.html', ...Object.keys(bundle), 'manifest.webmanifest', ...publicFiles])];

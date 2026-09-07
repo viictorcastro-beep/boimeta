@@ -73,7 +73,7 @@ test('Datas impossíveis e preços não positivos são rejeitados', () => {
 });
 test('Uma linha inválida não elimina preços válidos', () => {
   const rows = parseConab({ precos: [
-    { nomeProduto: 'Milho em grãos', nivel: 'PRODUTOR', uf: 'BA', periodo: '31/08/26 a 04/09/26', valor: '66,96' },
+    { nomeProduto: 'Milho em grãos (60 kg)', nivel: 'PRODUTOR', uf: 'BA', periodo: '31/08/26 a 04/09/26', valor: '66,96' },
     { valor: 'inválido' },
   ] });
   assert.equal(rows.length, 1); close(rows[0].value, 66.96);

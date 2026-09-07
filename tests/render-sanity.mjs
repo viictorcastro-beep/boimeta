@@ -13,7 +13,10 @@ try {
   const { default: Page } = await server.ssrLoadModule('../app/page.tsx');
   const html = renderToString(React.createElement(Page));
   assert.match(html, /BoiMeta/);
-  assert.match(html, /Conferir margem/);
+  assert.match(html, /Premissas &amp; caixa/);
+  assert.match(html, /O mercado está ajudando ou pressionando/);
+  assert.match(html, /Usar base produtiva/);
+  assert.doesNotMatch(html, /A vence pelo giro e pela janela complementar/);
   // Base UI inclui scripts de hidratação com Number.isNaN; não são resultados.
   const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
   const nonFinite = [

@@ -1,0 +1,63 @@
+{
+  "attemptedAt": "2026-09-07T02:30:27.378Z",
+  "completedAt": "2026-09-07T02:30:29.930Z",
+  "requestedUfs": [
+    "AC",
+    "AL",
+    "AP",
+    "AM",
+    "BA",
+    "CE",
+    "DF",
+    "ES",
+    "GO",
+    "MA",
+    "MT",
+    "MS",
+    "MG",
+    "PA",
+    "PB",
+    "PR",
+    "PE",
+    "PI",
+    "RJ",
+    "RN",
+    "RS",
+    "RO",
+    "RR",
+    "SC",
+    "SP",
+    "SE",
+    "TO"
+  ],
+  "updatedUfs": 21,
+  "failures": [
+    {
+      "uf": "AC",
+      "error": "A Conab não retornou preços válidos recentes para AC."
+    },
+    {
+      "uf": "AM",
+      "error": "A Conab não retornou preços válidos recentes para AM."
+    },
+    {
+      "uf": "PB",
+      "error": "A Conab não retornou preços válidos recentes para PB."
+    },
+    {
+      "uf": "RJ",
+      "error": "A Conab não retornou preços válidos recentes para RJ."
+    },
+    {
+      "uf": "RN",
+      "error": "A Conab não retornou preços válidos recentes para RN."
+    },
+    {
+      "uf": "RR",
+      "error": "A Conab não retornou preços válidos recentes para RR."
+    }
+  ],
+  "lookbackWeeks": 12,
+  "retentionWeeks": 104,
+  "frequency": "Dias úteis, 09:30 de Brasília; GitHub pode atrasar a execução."
+}

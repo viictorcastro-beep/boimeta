@@ -33,7 +33,15 @@ async function marketReference(request) {
       const prior = byProduct.get(quote.product);
       if (!prior || quote.sourceDate >= prior.sourceDate) byProduct.set(quote.product, quote);
     }
-    return new Response(JSON.stringify({ ...data, quotes: [...byProduct.values()] }), { headers: { 'Content-Type': 'application/json' } });
+    const history = new Map();
+    for (const quote of [...(old?.history || []), ...(old?.quotes || []), ...(data.history || []), ...data.quotes]) {
+      if (quote.uf !== data.uf || !Number.isFinite(quote.value) || quote.value <= 0) continue;
+      const key = [quote.uf, quote.product, quote.description, quote.level, quote.displayUnit, quote.periodStart, quote.periodEnd].join('|');
+      history.set(key, quote);
+    }
+    return new Response(JSON.stringify({ ...data, quotes: [...byProduct.values()],
+      history: [...history.values()].sort((a, b) => a.sourceDate.localeCompare(b.sourceDate)).slice(-500)
+    }), { headers: { 'Content-Type': 'application/json' } });
   }
   const saved = shipped && previous ? await combine(shipped, previous) : shipped || previous;
   const timer = new AbortController();

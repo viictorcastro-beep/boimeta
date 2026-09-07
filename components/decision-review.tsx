@@ -188,9 +188,15 @@ export function DecisionReview(p: Props) {
     <div className="space-y-5 text-base">
       <section className="rounded-2xl border bg-card p-5 sm:p-6">
         <h2 className="font-heading text-2xl font-semibold">
-          De onde vem a margem?
+          Premissas, caixa e capacidade
         </h2>
         <p className="mt-2 text-muted-foreground">
+          O caso de 400 ha é uma base produtiva editável, não uma meta de retorno.
+          A decisão usa seus preços, custos, capacidade e orçamento atuais.
+        </p>
+        <details className="mt-4 rounded-xl border p-4">
+          <summary className="cursor-pointer font-semibold">Origem das premissas e reconciliação histórica · auditoria opcional</summary>
+        <p className="mt-3 text-muted-foreground">
           Referência histórica e cenário local usam o mesmo denominador. Não
           ajustamos custos ou produtividade para forçar o resultado da
           referência.
@@ -225,7 +231,7 @@ export function DecisionReview(p: Props) {
           {money(bridge.sourceUnreconciled)}. As fotos não permitem fechar esse
           ajuste; a diferença permanece identificada.
         </p>
-        <details className="mt-4 rounded-xl border p-4" open>
+        <details className="mt-4 rounded-xl border p-4">
           <summary className="cursor-pointer font-semibold">
             Ponte de cálculo · R$/ha total/ano
           </summary>
@@ -262,9 +268,10 @@ export function DecisionReview(p: Props) {
             núcleo anual sem validação.
           </p>
         </details>
+        </details>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button variant="outline" onClick={p.onResetReference}>
-            Carregar premissas históricas
+            Usar base produtiva de 400 ha
           </Button>
           <p className="text-sm text-muted-foreground">
             Salve seu cenário antes. Carregar a referência não elimina as
