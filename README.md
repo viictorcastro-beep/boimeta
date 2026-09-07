@@ -37,6 +37,12 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 
 ## O que os números representam
 
+### Caixa, lotação e alavancas
+
+Em **Resultado → O que muda a decisão**, use **Mesmo capital** para comparar escalas parciais, **Alavancas de margem** para testar uma mudança por vez e **Lotação e área** para separar UA/ha de pasto da média da fazenda. O quadro geral acima continua comparando a área inteira. A diferença entre esses escopos pode mudar a primeira colocação.
+
+A rota A mostra a melhor proporção pasto/silagem testada e os preços de empate com B/C, sem prometer preço futuro ou retorno ao investimento. A inversa calcula a área equivalente de custeio agrícola, mas só atribui margem à área disponível. Informe custos adicionais de intensificação; aumentar UA sozinho não cria capim, energia ou desempenho. O relatório CSV contém os estudos e suas limitações. Veja a [auditoria numérica e prioridades](DECISAO_CAPITAL_2026-09-07.4.md).
+
 - A tela rápida é uma comparação nominal de **ano em regime pleno**, não um orçamento de implantação nem garantia de retorno.
 - A margem/ha usa a área-base total, incluindo silagem. Na comparação rápida, A usa silagem própria e milho comprado; o preço entregue fica em **Seu cenário → Alimentação e cocho**. O preço de venda do milho fica em **Lavouras irrigadas**. Hectares de milho próprio adicional e sua oportunidade de venda são identificados na integração avançada.
 - A análise datada e o alocador têm critérios próprios de mercado, disponibilidade, capacidade e oportunidade do alimento.
@@ -70,6 +76,7 @@ pnpm test:decision
 pnpm test:market
 pnpm test:business
 pnpm test:controls
+pnpm test:lab
 pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit

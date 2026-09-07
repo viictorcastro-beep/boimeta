@@ -5,6 +5,8 @@ import { AppInstall } from '@/components/app-install';
 import { DecisionReview } from '@/components/decision-review';
 import { MarketCompass } from '@/components/market-compass';
 import { BusinessReview } from '@/components/business-review';
+import { DecisionLab } from '@/components/decision-lab';
+import { capitalStudy, inverseCropCapital, marginLevers, stockingStudy, feedlotTurningPoints, enterpriseIds, type LabInput } from '@/lib/decision-lab';
 import { capacityActions } from '@/lib/capacity-actions';
 import { rearingOnly, rearingStartupCash, rearingCapitalRequirement, stressRearing } from '@/lib/rearing-model';
 import { areaResponse } from '@/lib/investment-screen';
@@ -992,6 +994,8 @@ export default function Home() {
       [
         'totalArea',
         'stockingUa',
+        'pastureExtraCostHa',
+        'otherCostFactor',
         'entryWeight',
         'pivotExitWeight',
         'saleWeight',
@@ -2341,6 +2345,11 @@ export default function Home() {
     [baseModelAssumptions, effectiveReplacementCostHead],
   );
   const result = useMemo(() => simulate(modelAssumptions), [modelAssumptions]);
+  // Orçamento anual da área inteira, inclusive capacidade ociosa. Na rota
+  // integrada as diárias são premissas separadas: não somar o adicional nelas.
+  const extraPastureCostHa = Math.max(0, assumptions.pastureExtraCostHa ?? 0) * assumptions.otherCostFactor / 100;
+  const extraPastureAnnualA = result.pastureAreaA * extraPastureCostHa;
+  const extraPastureAnnualB = assumptions.totalArea * extraPastureCostHa;
   const rearingAssumptions = useMemo(() => ({ ...modelAssumptions, calfCost: assumptions.calfCost }), [modelAssumptions, assumptions.calfCost]);
   const rearing = useMemo(() => rearingOnly(rearingAssumptions, animalTimelineInputs.gateValuePerKgLive), [rearingAssumptions, animalTimelineInputs.gateValuePerKgLive]);
   const rearingCash = useMemo(() => rearingStartupCash(rearingAssumptions, animalTimelineInputs.gateValuePerKgLive, animalTimelineInputs.entryDate, operationalInputs.setupDays, operationalInputs.setupCost),
@@ -2417,7 +2426,8 @@ export default function Home() {
     result.pastureCandidatesA *
       preGateDaysA *
       integratedCommonPastureCostDay *
-      (preGateDaysA / 730);
+      (preGateDaysA / 730) +
+    extraPastureAnnualA * Math.max(1, (result.daysPivotA + result.daysFeedlot + 1) / 365);
   const automaticFeedlotEntryDate = addIsoDays(
     animalTimelineInputs.entryDate,
     preGateDaysA,
@@ -2895,7 +2905,7 @@ export default function Home() {
     feedAllocation.routeCostNominal +
     result.cowsSold * result.cowCashCost +
     result.landLeaseCost +
-    linkedFeedCostAtEntry;
+    linkedFeedCostAtEntry + extraPastureAnnualA;
   const integratedRouteMarginA = routeIntegrationReady
     ? integratedRouteRevenueA - integratedRouteCostA
     : 0;
@@ -2911,7 +2921,7 @@ export default function Home() {
       routeBDays *
       animalTimelineInputs.pastureFinishCostDay *
       (routeBDays / 730) +
-    linkedGrainCashCost;
+    linkedGrainCashCost + extraPastureAnnualB * Math.max(1, (routeBDays + 1) / 365);
   const capitalFeasibleB =
     integratedWorkingCapitalB + assumptions.pivotInvestment + operationalInputs.reserveCash + operationalInputs.setupCost <= strategyCapitalLimit + 1e-6;
   const routeBReady =
@@ -2930,7 +2940,7 @@ export default function Home() {
   const routeBMargin = routeBReady
     ? routeBRevenue -
       result.entrantsB * (timelineEntryCostHeadB + routeBDays * animalTimelineInputs.pastureFinishCostDay) -
-      result.landLeaseCost
+      result.landLeaseCost - extraPastureAnnualB
     : 0;
   const routeBCost = routeBReady ? routeBRevenue - routeBMargin : 0;
   // The external grain hectares are common to both A and B. In A they may be
@@ -3361,11 +3371,11 @@ export default function Home() {
             routeBDays *
             animalTimelineInputs.pastureFinishCostDay *
             (routeBDays / 730) +
-          linkedGrainCashCost;
+          linkedGrainCashCost + extraPastureAnnualB * Math.max(1, (routeBDays + 1) / 365);
         const scenarioCapitalFeasibleB =
           scenarioIntegratedWorkingCapitalB + assumptions.pivotInvestment + operationalInputs.reserveCash + operationalInputs.setupCost <= strategyCapitalLimit + 1e-6;
         const revenueAtEntry = arrobas * effectivePrice * retainedSale;
-        const annualCostAtEntry = result.entrantsB * (scenarioTimelineEntryCostHeadB + routeBDays * animalTimelineInputs.pastureFinishCostDay) + result.landLeaseCost;
+        const annualCostAtEntry = result.entrantsB * (scenarioTimelineEntryCostHeadB + routeBDays * animalTimelineInputs.pastureFinishCostDay) + result.landLeaseCost + extraPastureAnnualB;
         const margin =
           revenueAtEntry -
           annualCostAtEntry +
@@ -4087,6 +4097,19 @@ export default function Home() {
   );
   const runnerUp = budgetRanking.feasible[1];
   const capacityDiagnostics = capacityActions(modelAssumptions, allocationInputs.grainPurchasePriceSack);
+  const decisionLabInput = useMemo<LabInput>(() => ({
+    a: modelAssumptions, calfCostC: assumptions.calfCost,
+    gateNetPrice: animalTimelineInputs.gateValuePerKgLive, budget: strategyCapitalLimit,
+    anchor: animalTimelineInputs.entryDate, setupDays: operationalInputs.setupDays,
+    setupCost: operationalInputs.setupCost, reserveCash: operationalInputs.reserveCash,
+    cornDelivered: allocationInputs.grainPurchasePriceSack, crops,
+    windows: Object.fromEntries(crops.map(c => { const w = automaticCalendar.crops[c.id]; return [c.id, { plant: w.plantDate, harvest: w.harvestDate, eligible: w.sanitaryFit }]; })),
+    doubleWindow: { soyPlant: automaticCalendar.doubleCrop.soyPlantDate, soyHarvest: automaticCalendar.doubleCrop.soyHarvestDate,
+      cornPlant: automaticCalendar.doubleCrop.cornPlantDate, cornHarvest: automaticCalendar.doubleCrop.cornHarvestDate,
+      eligible: automaticCalendar.crops['soy-irrigated'].sanitaryFit && automaticCalendar.crops['corn-irrigated'].sanitaryFit },
+    desiredUa: assumptions.stockingUa, forage: reviewInputs,
+  }), [modelAssumptions, assumptions.calfCost, assumptions.stockingUa, animalTimelineInputs.gateValuePerKgLive, animalTimelineInputs.entryDate, strategyCapitalLimit, operationalInputs, allocationInputs.grainPurchasePriceSack, crops, automaticCalendar, reviewInputs]);
+  const reportCapitalStudy = useMemo(() => activeTab === 'report' ? capitalStudy(decisionLabInput) : null, [activeTab, decisionLabInput]);
   const leaseBurden =
     best.id !== 'none-feasible' && result.landLeaseCost > 0
       ? (result.landLeaseCost /
@@ -4527,6 +4550,22 @@ export default function Home() {
       ['Milho entregue A = B (R$/sc)', capacityDiagnostics.cornIndifference ?? 'sem empate não negativo'],
       ['Cocho nominal para potencial alimentar', capacityDiagnostics.neededCapacity ?? 'n/d'],
       ['Área não utilizada pelo fluxo terminado (ha)', capacityDiagnostics.unusedFlowArea],
+      ['MESMO CAPITAL · margem anual de regime pleno · não é lucro líquido'],
+      ['Orçamento (R$)', decisionLabInput.budget, 'Área disponível (ha)', assumptions.totalArea],
+      ['Método', 'Alternativas exclusivas. Busca discreta em hectares inteiros e saturação do cocho; não ótimo global. CAPEX/reserva mantidos; arrendamento ocioso pago. Não operar é alternativa, com arrendamento conhecido.'],
+      ['Rota', 'Área inteira: capital (R$)', 'Máximo financiável (ha)', 'Área de maior margem testada (ha)', 'Margem anual (R$)', 'Capital exigido (R$)', 'Caixa livre (R$)', 'Melhor operação testada: margem, mesmo se negativa (R$)'],
+      ...capitalStudy(decisionLabInput).rows.map(r => [r.id, r.full.capital, r.maximumArea, r.best.area, r.best.margin, r.best.capital, r.spareCash, r.bestOperating?.margin ?? 'sem operação financiável']),
+      ['INVERSA · mesma verba da pecuária · área equivalente não significa terra disponível'],
+      ...(['cattle-a', 'cattle-b', 'cattle-c'] as const).flatMap(id => { const study = inverseCropCapital(decisionLabInput, id); return study.rows.map(r => [id, study.reference.capital, r.id, r.equivalentArea ?? 'n/d', r.local.area, r.local.margin, r.local.capital]); }),
+      ['LOTAÇÃO · por hectare de PASTO, não de área total; UA = 450 kg vivos'],
+      ['Intensificação adicional (R$/ha pasto/ano antes do fator)', assumptions.pastureExtraCostHa ?? 0],
+      ['UA desejada', 'UA aplicada', 'UA no pasto A', 'UA pasto A/ha total', 'A vendidos/ano', 'A margem anual', 'B margem anual', 'C margem anual', 'Silagem: melhor % testado'],
+      ...stockingStudy(decisionLabInput).map(r => [r.desired, r.applied, r.pastureUaA, r.pastureUaPerTotalArea, r.rows[0].sold, ...r.rows.map(x => x.margin), r.balancedShare]),
+      ['ALAVANCAS · uma alteração por vez · efeitos não somáveis · consumo/custos adicionais não presumidos'],
+      ['Rota', 'Teste', 'Valor', 'Unidade', 'Efeito na margem (R$/ano)', 'Nova margem (R$/ano)', 'Capital requerido (R$)', 'Limite'],
+      ...enterpriseIds.flatMap(id => (['improve', 'pressure'] as const).flatMap(direction => marginLevers(decisionLabInput, id, direction).rows.map(r => [id, r.label, r.value, r.unit, r.delta, r.result.margin, r.result.capital, r.warning]))),
+      ['CONFINAMENTO · melhor divisão testada de 5 a 80% a cada 0,1 p.p.; mesma capacidade; não é projeto'],
+      ...(() => { const f = feedlotTurningPoints(decisionLabInput); return [['Silagem %', f.silageShare, 'Margem anual A', f.balanced.margin, 'Capital A', f.balanced.capital], ...f.comparisons.map(r => ['A versus', r.id, 'Diferença anual', r.difference, 'Preço boi empate (não previsão)', r.price ?? 'n/d', 'A melhora', r.direction])]; })(),
       ['RECRIA C · venda líquida em kg vivo · sem cocho/silagem/matrizes'],
       ['Preço líquido do magro (R$/kg)', animalTimelineInputs.gateValuePerKgLive],
       ['Fonte do magro', gateAppliedPriceMeta.source, 'Data-base informada', animalTimelineInputs.gateSourceDate || 'hipótese sem data'],
@@ -5091,7 +5130,11 @@ export default function Home() {
 <Control label="GMD recria · A/C" value={assumptions.gmdPivotA} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdPivotA', value)} />
 <Control label="GMD ciclo no pivô · B" value={assumptions.gmdB} suffix="kg/d" min={0.2} max={2} step={0.01} onChange={(value) => update('gmdB', value)} />
 <Control label="GMD no confinamento" value={assumptions.gmdFeedlot} suffix="kg/d" min={0.5} max={3} step={0.01} onChange={(value) => update('gmdFeedlot', value)} />
-<Control label="Lotação média" value={assumptions.stockingUa} suffix="UA/ha" min={1} max={30} step={0.1} onChange={(value) => update('stockingUa', value)} />
+<Control label="Lotação no pasto" value={assumptions.stockingUa} suffix="UA/ha" min={1} max={30} step={0.1} onChange={(value) => update('stockingUa', value)} />
+<p className="text-sm text-muted-foreground">Digite a lotação por hectare de pasto, sem descontar silagem. A separa a área de silagem; B/C usam toda a área em pasto. Uma UA equivale a 450 kg vivos, não uma cabeça. O suporte anual depende da produção mensal de capim.</p>
+<Control label="Intensificação adicional do pasto" value={assumptions.pastureExtraCostHa ?? 0} suffix="R$/ha/ano" min={0} max={50000} step={100} onChange={value => update('pastureExtraCostHa', value)} />
+<p className="text-xs text-muted-foreground">Adubação, energia e manejo adicionais à base. Zero não comprova intensificação gratuita. Incide só no pasto, antes do fator abaixo.</p>
+<Control label="Custeio não animal" value={assumptions.otherCostFactor} suffix="% da base" min={0} max={300} step={1} onChange={value => update('otherCostFactor', value)} />
 <Control label="Prêmio de rendimento no cocho" value={assumptions.feedlotCarcassYieldLiftPercent} suffix="p.p." min={0} max={10} step={0.1} onChange={(value) => update('feedlotCarcassYieldLiftPercent', value)} />
 <Control label="Preço do suplemento" value={assumptions.supplementPrice} suffix="R$/kg" min={1} max={20} step={0.05} onChange={(value) => update('supplementPrice', value)} /></div></details></> },
 { id: 'feed', title: 'Alimentação e cocho', summary: one.format(assumptions.silageShare) + '% silagem · ' + int.format(allocationInputs.feedlotCapacity) + ' vagas', children: <><Control label="Área de silagem" value={assumptions.silageShare} suffix="%" min={5} max={80} step={1} onChange={(value) => update('silageShare', value)} />
@@ -5202,21 +5245,8 @@ export default function Home() {
 
               </div>
               </div></details>
-              <Panel>
-                <SectionTitle eyebrow="Alavancas do cenário atual" title="O que limita o resultado e o que testar"
-                  text="A: recria no pivô + silagem + confinamento. B: ciclo até o peso final no pivô. A divisão da área é editável; o motor não usa 75/25 quando você informar outra proporção." />
-                <div className="grid gap-4 p-5 sm:grid-cols-2 lg:p-6">
-                  <Metric label="Gargalo físico de A" value={capacityDiagnostics.binding}
-                    note={`${int.format(result.soldA)} terminados/ano · ${int.format(capacityDiagnostics.unusedRearingPotential)} de potencial de recria não roteado. Não são animais adicionais comprados ou vendidos automaticamente.`} tone="warn" />
-                  <Metric label="Área sem destino no fluxo terminado" value={`${one.format(capacityDiagnostics.unusedFlowArea)} ha`}
-                    note="Equivalente matemático de pasto e silagem não aproveitado por esse fluxo. O custeio continua incluído; a sobra não gera receita." />
-                  <Metric label="Cocho para o potencial alimentar" value={capacityDiagnostics.neededCapacity === null ? 'rever GMD/utilização' : `${int.format(capacityDiagnostics.neededCapacity)} vagas nominais`}
-                    note={`Ganho anual de A ao remover só esse gargalo: ${capacityDiagnostics.expansionAnnualGain === null ? 'n/d' : moneyCompact(capacityDiagnostics.expansionAnnualGain)}. Diferença do A dimensionado para B: ${capacityDiagnostics.expandedVersusB === null ? 'n/d' : moneyCompact(capacityDiagnostics.expandedVersusB)}. Antes de novo CAPEX, giro adicional e validação de lotes.`} />
-                  <Metric label="Milho entregue: ponto em que A = B" value={capacityDiagnostics.cornIndifference === null ? 'sem empate não negativo' : `${brl2.format(capacityDiagnostics.cornIndifference)}/sc`}
-                    note={assumptions.linkFeedToCropCosts ? 'Preço calculado de indiferença anual com as demais premissas constantes. A melhora com milho mais barato. Não é cotação nem preço-alvo de mercado.' : 'Dieta manual: o milho não altera o custo da ração. Ligue o custo local para calcular este ponto.'} tone="green" />
-                </div>
-                <div className="flex flex-wrap gap-3 border-t p-5"><Button variant="outline" onClick={() => openEditor('feed')}>Ajustar alimento e vagas</Button><Button variant="outline" onClick={() => openAnalysisTab('allocation')}>Ver produção própria e estoques</Button></div>
-              </Panel>
+              <DecisionLab input={decisionLabInput} onEdit={openEditor} onBudget={updateStrategyCapitalLimit}
+                onValidate={() => openAnalysisTab('audit')} onCosts={() => openAnalysisTab('costs')} />
               <div className="no-print grid gap-3 sm:grid-cols-2">
                 <Button variant="outline" onClick={() => openAnalysisTab('market')}>Consultar preços e tendências</Button>
                 <Button variant="outline" onClick={() => openAnalysisTab('viability')}>Ver capital e viabilidade do cocho</Button>
@@ -5399,7 +5429,7 @@ export default function Home() {
                 <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3 lg:p-6">
                   <Metric label="Pasto irrigado" value={`${one.format(result.pastureAreaA)} ha`} note={`${100 - assumptions.silageShare}% da área`} icon={<Sprout className="size-4" />} />
                   <Metric label="Silagem" value={`${one.format(result.silageArea)} ha`} note={`Necessário pelo balanço: ${one.format(result.requiredSilageArea)} ha`} tone={result.requiredSilageArea > result.silageArea ? 'warn' : 'green'} icon={<Wheat className="size-4" />} />
-                  <Metric label="Bois simultâneos no pivô" value={`${int.format(result.simultaneousPivotA)} cab`} note={`${two.format(result.simultaneousPivotA / result.pastureAreaA)} cab/ha`} icon={<Beef className="size-4" />} />
+                  <Metric label="Potencial de bois no pasto A" value={`${int.format(result.simultaneousPivotA)} cab`} note={`Não é o fluxo roteado. Pasto efetivamente usado pelo fluxo: ${int.format(result.entrantsA * result.daysPivotA / 365)} cabeças médias.`} icon={<Beef className="size-4" />} />
                   <Metric label="Potencial físico integral" value={`${int.format(result.soldA)} cab/ano`} note="Só vale se mercado, dieta, coortes e pico fecharem; não é o destino atual" tone="warn" />
                   <Metric label="Vagas indicativas de confinamento" value={`${int.format(result.recommendedConfinementCapacity)} cab`} note={`Ocupação média modelada + 10% assumidos; validar pico e manejo`} icon={<Factory className="size-4" />} />
                   <Metric label="Vacas de oportunidade" value={`${int.format(result.cowsSold)} cab/ano`} note={assumptions.includeCows ? `${int.format(result.cowWindowArea)} ha pós-silagem · um lote a 8 cab/ha` : 'Desligadas; não há área ou receita implícita'} />
@@ -6167,6 +6197,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="report" className="space-y-5" id="report-output">
+              <Panel><SectionTitle eyebrow="Mesmo capital · área parcial" title="Escalas que o orçamento permite estudar" text="Margens anuais de regime pleno, não lucro líquido ou retorno do primeiro ano. O quadro geral compara a área inteira; aqui a escala pode diminuir para caber no caixa." /><div className="p-5"><Table><TableHeader><TableRow><TableHead>Alternativa</TableHead><TableHead>Área testada de maior margem</TableHead><TableHead>Margem anual</TableHead><TableHead>Capital exigido</TableHead><TableHead>Capital para área inteira</TableHead></TableRow></TableHeader><TableBody>{reportCapitalStudy?.rows.map(r => <TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{one.format(r.best.area)} ha</TableCell><TableCell>{brl0.format(r.best.margin)}</TableCell><TableCell>{brl0.format(r.best.capital)}</TableCell><TableCell>{brl0.format(r.full.capital)}</TableCell></TableRow>)}</TableBody></Table><p className="mt-3 text-sm text-muted-foreground">Busca discreta, não ótimo global. Arrendamento ocioso, CAPEX e reserva mantidos. Não operar pode evitar perda incremental. CSV inclui alavancas, lotação, equivalência de custeio e preços de indiferença do cocho.</p></div></Panel>
               {scenarioMode === 'exploration' ? <div className="rounded-2xl border-2 border-[#d49e37]/45 bg-[#fff4d8] p-4 text-sm font-semibold text-[#6b4a12]">DEMONSTRAÇÃO — este relatório contém preços, capacidades, calendários e confirmações ilustrativas. Não use como recomendação, orçamento ou aprovação de investimento.</div> : null}
               <Panel>
                 <SectionTitle eyebrow={scenarioMode === 'exploration' ? 'Relatório demonstrativo' : 'Relatório executivo'} title={`${scenarioMode === 'exploration' ? 'Exemplo para' : 'Decisão para'} ${int.format(assumptions.totalArea)} ha irrigados`} text={scenarioMode === 'exploration' ? 'Síntese do exemplo para testar relações e sensibilidades. Toda exportação permanece marcada como demonstração não validada.' : 'Síntese automática do cenário atual. O ranking é recalculado instantaneamente quando preços, produtividades, custos e arrendamento são editados.'} action={<div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={exportReport}><Download /> Baixar CSV</Button><Button size="sm" className="bg-[#173e2c] text-white hover:bg-[#22533a]" onClick={() => window.print()}><FileText /> Imprimir / PDF</Button></div>} />

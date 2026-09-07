@@ -32,8 +32,8 @@ export function rearingOnly(a: Assumptions, gateNetPriceKg: number) {
   const supplement = 28.4 * (days / (160 / 0.9)) * a.supplementPrice * factor;
   const preGateVariableHead = a.calfCost + freightIn + health + supplement;
   const pastureCost =
-    ((Math.max(0, a.totalArea) * BASE.soldA * (432.62 + 19.97)) /
-      BASE.pastureAreaA) *
+    (Math.max(0, a.totalArea) * (BASE.soldA * (432.62 + 19.97) /
+      BASE.pastureAreaA + (a.pastureExtraCostHa ?? 0))) *
     factor;
   const lease = Math.max(0, a.totalArea) * a.landLeaseHa;
   const costs = entrants * preGateVariableHead + pastureCost + lease;

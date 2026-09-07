@@ -12,7 +12,7 @@ export function validateScenario<T>(document: unknown, template: T): T {
   if (!document || typeof document !== 'object' ||
     (document as { schema?: number }).schema !== SCENARIO_SCHEMA) throw new Error('Versão de cenário incompatível.');
   const model = (document as { model?: unknown }).model;
-  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3'].includes(model)))
+  if (model !== undefined && (typeof model !== 'string' || !['2026-09-06.1', '2026-09-06.2', '2026-09-06.3', '2026-09-06.4', '2026-09-07.1', '2026-09-07.2', '2026-09-07.3', '2026-09-07.4'].includes(model)))
     throw new Error('Versão de cálculo não suportada. Preserve o arquivo e importe com a versão correspondente.');
   const walk = (value: unknown, base: unknown, key = ''): unknown => {
     if (typeof base === 'number') {
@@ -71,6 +71,10 @@ export function validateScenario<T>(document: unknown, template: T): T {
   // Migração estável: campos novos não herdam alterações feitas na tela atual.
   const original = (document as { data?: Record<string, unknown> }).data;
   const inputData = original && typeof original === 'object' ? { ...original } : original;
+  if (inputData?.assumptions && typeof inputData.assumptions === 'object') {
+    const assumptions = inputData.assumptions as Record<string, unknown>;
+    inputData.assumptions = { ...assumptions, pastureExtraCostHa: assumptions.pastureExtraCostHa ?? 0 };
+  }
   if (inputData && Array.isArray(inputData.crops)) {
     const fixed: Record<string, number> = { 'soy-irrigated': 1000, 'corn-irrigated': 1100, 'cotton-irrigated': 1946.12592 };
     inputData.crops = inputData.crops.map((crop: Record<string, unknown>) => crop && typeof crop === 'object' ? {

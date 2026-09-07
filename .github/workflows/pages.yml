@@ -33,6 +33,7 @@ jobs:
       - run: pnpm test:market
       - run: pnpm test:business
       - run: pnpm test:controls
+      - run: pnpm test:lab
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:render

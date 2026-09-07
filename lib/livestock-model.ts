@@ -3,6 +3,7 @@ export type Assumptions = {
   landLeaseHa: number;
   silageShare: number;
   stockingUa: number;
+  pastureExtraCostHa?: number;
   priceArroba: number;
   carcassYieldPercent: number;
   feedlotCarcassYieldLiftPercent: number;
@@ -84,6 +85,7 @@ export const defaultAssumptions: Assumptions = {
   landLeaseHa: 0,
   silageShare: 25,
   stockingUa: 7.8,
+  pastureExtraCostHa: 0,
   priceArroba: 349.5,
   carcassYieldPercent: 54,
   // O caso de referência distingue o rendimento do animal terminado no
@@ -253,8 +255,8 @@ export function calculateCore(a: Assumptions) {
   const supplementKgB = 105.3 * (daysB / 300);
   // O&M do pivô é orçamento por hectare/ano, não multiplicador gratuito de cabeças.
   // Benchmark agregado; o diagnóstico hídrico é separado até existir medição local.
-  const annualPastureOperatingA = pastureAreaA * BASE.soldA * (432.62 + 19.97) / BASE.pastureAreaA;
-  const annualPastureOperatingB = pastureAreaB * BASE.soldB * 930.89 / BASE.totalArea;
+  const annualPastureOperatingA = pastureAreaA * (BASE.soldA * (432.62 + 19.97) / BASE.pastureAreaA + (a.pastureExtraCostHa ?? 0));
+  const annualPastureOperatingB = pastureAreaB * (BASE.soldB * 930.89 / BASE.totalArea + (a.pastureExtraCostHa ?? 0));
   const pastureOperatingA = soldA > 0 ? annualPastureOperatingA / soldA : 0;
   const pastureOperatingB = soldB > 0 ? annualPastureOperatingB / soldB : 0;
   const variableFactor = a.otherCostFactor / 100;

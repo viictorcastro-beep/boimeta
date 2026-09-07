@@ -34,6 +34,11 @@ try {
   assert.match(html, /O mercado está ajudando ou pressionando/);
   assert.match(html, /Usar base produtiva/);
   assert.match(html, /Ver capital e viabilidade do cocho/);
+  assert.match(html, /O que muda a decisão/);
+  assert.match(html, /Mesmo capital/);
+  assert.match(html, /Alavancas de margem/);
+  assert.match(html, /Lotação no pasto/);
+  assert.match(html, /Intensificação adicional do pasto/);
   assert.match(html, /Pecuária C/);
   assert.match(html, /sem prêmio de exportação automático/);
   assert.match(html, /value="30\.000\.000"/);
