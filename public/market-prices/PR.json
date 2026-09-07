@@ -1,0 +1,61 @@
+{
+  "source": "CONAB · Pesquisa de Preços Agrícolas",
+  "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
+  "uf": "PR",
+  "searchedPeriods": [
+    "31/08/2026 até 04/09/2026",
+    "24/08/2026 até 28/08/2026",
+    "17/08/2026 até 21/08/2026",
+    "10/08/2026 até 14/08/2026"
+  ],
+  "fetchedAt": "2026-09-06T23:52:17.536Z",
+  "quotes": [
+    {
+      "source": "CONAB",
+      "product": "cattle",
+      "displayUnit": "R$/@ de 15 kg",
+      "description": "BOI GORDO   (15 kg)",
+      "uf": "PR",
+      "level": "PRODUTOR",
+      "periodStart": "2026-08-31",
+      "periodEnd": "2026-09-04",
+      "sourceDate": "2026-09-04",
+      "rawPeriod": "31/08/26 a 04/09/26",
+      "value": 353.13
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "PR",
+      "level": "PRODUTOR",
+      "periodStart": "2026-08-31",
+      "periodEnd": "2026-09-04",
+      "sourceDate": "2026-09-04",
+      "rawPeriod": "31/08/26 a 04/09/26",
+      "value": 59.15
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "PR",
+      "level": "PRODUTOR",
+      "periodStart": "2026-08-31",
+      "periodEnd": "2026-09-04",
+      "sourceDate": "2026-09-04",
+      "rawPeriod": "31/08/26 a 04/09/26",
+      "value": 136.94
+    }
+  ],
+  "missingProducts": [
+    "cotton"
+  ],
+  "warnings": [],
+  "completeness": "partial",
+  "frequency": "weekly",
+  "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
+  "delivery": "scheduled-snapshot"
+}
