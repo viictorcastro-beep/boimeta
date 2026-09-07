@@ -18,7 +18,7 @@ export function pwaBuild(): Plugin {
       };
       const publicRoot = new URL('../public/', import.meta.url);
       const publicFiles = ['favicon.svg', 'icons/app.svg', 'icons/app-192.png', 'icons/app-512.png',
-        ...readdirSync(new URL('market-prices/', publicRoot)).filter((name) => /^[A-Z]{2}\.json$/.test(name)).map((name) => 'market-prices/' + name)];
+        ...readdirSync(new URL('market-prices/', publicRoot)).filter((name) => /^(?:[A-Z]{2}|fundamentals)\.json$/.test(name)).map((name) => 'market-prices/' + name)];
       const hash = createHash('sha256');
       hash.update(readFileSync(new URL('../pages/index.html', import.meta.url)));
       for (const value of Object.values(bundle)) hash.update(value.type === 'chunk' ? value.code : value.source);

@@ -18,7 +18,7 @@ if (!changed.length) process.exit(0);
 if (
   changed.some(
     (path) =>
-      !/^public\/market-prices\/(?:[A-Z]{2}|update-status)\.json$/.test(path),
+      !/^public\/market-prices\/(?:[A-Z]{2}|update-status|fundamentals)\.json$/.test(path),
   )
 ) {
   throw new Error(

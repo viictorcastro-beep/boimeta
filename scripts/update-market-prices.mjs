@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fetchConabPrices, VALID_UFS } from '../lib/conab-prices.ts';
 import { mergeMarketHistory } from '../lib/market-signals.ts';
+import { fetchOfficialNews } from '../lib/market-news.ts';
 
 // Generated data, never fabricated fallbacks. Preserve each original date.
 const folder = new URL('../public/market-prices/', import.meta.url);
@@ -50,3 +51,16 @@ await writeFile(new URL('update-status.json', folder), JSON.stringify({
   frequency: 'Dias úteis, 09:30 de Brasília; GitHub pode atrasar a execução.',
 }, null, 2) + '\n');
 if (updated === 0) console.warn('::warning::Nenhuma UF atualizada. Observações anteriores e suas datas foram preservadas.');
+try {
+  const news = await fetchOfficialNews();
+  const target = new URL('fundamentals.json', folder);
+  let previous;
+  try { previous = JSON.parse(await readFile(target, 'utf8')); } catch {}
+  const byId = new Map((previous?.items ?? []).map(item => [item.id, item]));
+  news.items.forEach(item => byId.set(item.id, item));
+  news.items = [...byId.values()].sort((a, b) => b.sourceDate.localeCompare(a.sourceDate)).slice(0, 30);
+  await writeFile(target, JSON.stringify(news, null, 2) + '\n');
+  console.log('IBGE: ' + news.items.length + ' notícias datadas de abate/safra; sem efeito automático nos preços.');
+} catch {
+  console.warn('::warning::IBGE indisponível. Último contexto datado preservado.');
+}

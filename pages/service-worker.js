@@ -60,11 +60,42 @@ async function marketReference(request) {
       new Response(JSON.stringify({ quotes: [], error: 'Sem referência salva. Conecte-se para atualizar.' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
   } finally { clearTimeout(timeout); }
 }
+async function marketNewsReference(request) {
+  const cache = await caches.open(PRICES);
+  const previous = await cache.match(request);
+  const shipped = await (await caches.open(SHELL)).match(request);
+  let fallback = previous || shipped;
+  if (previous && shipped) {
+    const p = await previous.clone().json().catch(() => ({}));
+    const s = await shipped.clone().json().catch(() => ({}));
+    if ((s.collectedAt || '') > (p.collectedAt || '')) fallback = shipped;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(request, { signal: controller.signal, cache: 'no-cache' });
+    const data = await response.clone().json();
+    if (!response.ok || data.source !== 'IBGE' || !Array.isArray(data.items) || !data.items.length) throw new Error('No news');
+    if (!Number.isFinite(Date.parse(data.collectedAt))) throw new Error('Undated news');
+    if (fallback) {
+      const saved = await fallback.clone().json().catch(() => ({}));
+      if (Date.parse(saved.collectedAt) > Date.parse(data.collectedAt)) return fallback;
+    }
+    await cache.put(request, response.clone());
+    return response;
+  } catch {
+    return fallback || new Response(JSON.stringify({ items: [], error: 'Sem notícias disponíveis offline.' }), { status: 503 });
+  } finally { clearTimeout(timeout); }
+}
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin || !url.pathname.startsWith(BASE)) return;
   if (/\/market-prices\/[A-Z]{2}\.json$/.test(url.pathname)) {
     event.respondWith(marketReference(event.request));
+    return;
+  }
+  if (url.pathname.endsWith('/market-prices/fundamentals.json')) {
+    event.respondWith(marketNewsReference(event.request));
     return;
   }
   if (event.request.mode === 'navigate' && (url.pathname === BASE || url.pathname === BASE + 'index.html')) {

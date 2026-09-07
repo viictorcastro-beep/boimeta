@@ -16,6 +16,12 @@ try {
   assert.match(html, /Premissas &amp; caixa/);
   assert.match(html, /O mercado está ajudando ou pressionando/);
   assert.match(html, /Usar base produtiva/);
+  assert.match(html, /Recriar, terminar ou investir no cocho/);
+  assert.match(html, /Pecuária C/);
+  assert.match(html, /sem prêmio embutido/);
+  assert.match(html, /value="30\.000\.000"/);
+  assert.match(html, /GMD recria · A\/C/);
+  assert.match(html, /GMD ciclo no pivô · B/);
   assert.doesNotMatch(html, /A vence pelo giro e pela janela complementar/);
   // Base UI inclui scripts de hidratação com Number.isNaN; não são resultados.
   const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -61,6 +67,17 @@ try {
     !/(?:NaN|Infinity)/.test(review),
     'Conferir margem deve renderizar sem números não finitos',
   );
+  const { BusinessReview } = await server.ssrLoadModule('../components/business-review.tsx');
+  const { calculateCore } = await server.ssrLoadModule('../lib/livestock-model.ts');
+  const { rearingOnly } = await server.ssrLoadModule('../lib/rearing-model.ts');
+  const invalidAssumptions = { ...defaultAssumptions, entryWeight: 540, pivotExitWeight: 400, saleWeight: 540 };
+  const invalidReview = renderToString(React.createElement(BusinessReview, {
+    a: invalidAssumptions, core: calculateCore(invalidAssumptions),
+    rearing: rearingOnly(invalidAssumptions, 12.5), cash: null, rearingCapital: 0,
+    budget: 30000000, gateSourceDate: '', rows: [], controls: null,
+  }));
+  assert.match(invalidReview, /Corrija os pesos/);
+  assert.doesNotMatch(invalidReview, /VPL incremental de triagem/);
   console.log(
     'render-sanity: página renderizada, sem NaN/Infinity; não substitui teste visual em dispositivos.',
   );

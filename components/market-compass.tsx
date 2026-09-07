@@ -339,8 +339,8 @@ export function MarketCompass(p: Props) {
             >
               contratos B3
             </a>
-            . Notícias ainda não são processadas automaticamente; não inventamos
-            efeitos percentuais a partir de manchetes.
+            . Manchetes oficiais do IBGE são coletadas automaticamente em dias úteis;
+            não inventamos efeitos percentuais sobre preços a partir delas.
           </p>
           <p>
             <a

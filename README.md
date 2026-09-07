@@ -25,9 +25,11 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 6. Use **Salvar no navegador** e **Restaurar salvo** para guardar um cenário no dispositivo. Não há salvamento automático: salve novamente depois das alterações.
 7. **Baixar cenário** e **Abrir cenário** compartilham premissas em JSON versionado. Confirmações operacionais são renovadas ao importar.
 8. A aba de relatório exporta CSV e permite impressão. O JSON restaura o cenário; o CSV documenta resultados.
-9. Abra **Conferir margem** para reconciliar a referência histórica, comparar primeiro ano com regime pleno, informar reserva/implantação e verificar os requisitos físicos.
-10. Em **Conferir margem → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
+9. Abra **Premissas & caixa** para conferir primeiro ano, reserva/implantação e requisitos físicos. A reconciliação histórica permanece recolhida, não como meta de margem.
+10. Em **Premissas & caixa → Estudos salvos**, guarde até dez versões locais e registre pesagens `id;data;peso kg`. O desvio de GMD não determina venda ou mudança de dieta automaticamente.
 11. A tela rápida destaca a maior margem entre alternativas que cabem no capital estimado. **Estratégia** calcula um mix exclusivo de hectares, com custeio conservador, CAPEX e limite de vagas-dia.
+12. Compare **A: recria + cocho**, **B: ciclo no pivô** e **C: recria e venda do magro**. Informe o preço líquido local do magro; não é a cotação da arroba de boi gordo. O GMD de recria A/C e o do ciclo B têm controles separados.
+13. Valores usam português brasileiro: `30.000.000`, `1.234,56`, `0,78`. É possível colar `R$ 1.234,56`. Um campo vazio não zera silenciosamente a premissa; use vírgula decimal, Enter para concluir ou as setas para incrementar.
 
 ## O que os números representam
 
@@ -41,7 +43,10 @@ Simulador técnico-econômico de pecuária e culturas irrigadas. Sem cadastro, s
 - Fixos agrícolas são R$/ha/safra, independentes do preço da commodity. No editor de custos, estresse altera o orçamento; classificação redistribui o agregado existente.
 - O primeiro ano usa coortes diárias equivalentes, aquisição de animais, implantação e custeio datado. Animais não vendidos não viram receita. É um plano financeiro simplificado, não programação executiva dos lotes.
 - O mix defensivo maximiza o pior resultado do portfólio conjunto. Não atribui probabilidades aos cenários nem supõe vendas e consumo simultâneo do mesmo milho.
-- Curvas futuras e notícias não são um feed automático em tempo real. Cotações futuras não garantem o preço de venda.
+- Notícias oficiais IBGE de abate/safra são coletadas em dias úteis, com data da publicação e da coleta. Não são interpretadas automaticamente como variação de preço. Curvas futuras ainda não têm feed automático validado e não garantem preço de venda.
+- Recria C usa toda a área, reposição 100% comprada, venda líquida por kg vivo e mortalidade de referência de 0,2%. Não inclui silagem, confinamento, matrizes, vacas ou efluente. O capital é o maior entre pico datado e reserva para completar uma ocupação do pasto, acrescido da reserva livre; não diminui artificialmente ao adiar a entrada.
+- VPL exibido no painel de investimento é **incremental A menos B**, com regime pleno e preços constantes. Não é VPL da aquisição da fazenda. Pesos/GMD inválidos exigem correção antes de emitir esse parecer.
+- Foco em exportação não acrescenta prêmio. Peso/acabamento não certificam “boi-China”; documentação, sanidade, requisitos vigentes e comprador precisam ser verificados.
 - Os custos iniciais são bases anonimizadas/hipóteses editáveis; não são cotações atuais de fornecedores.
 
 ## Desenvolvimento
@@ -54,6 +59,7 @@ pnpm test:model
 pnpm test:regression
 pnpm test:decision
 pnpm test:market
+pnpm test:business
 pnpm test:render
 pnpm lint
 pnpm exec tsc --noEmit
@@ -95,3 +101,5 @@ Veja [a auditoria desta versão](docs/AUDITORIA_PUBLICA_2026-09-06.md) para corr
 Veja [o guia da versão 2026-09-06.2](docs/DECISAO_2026-09-06.2.md) para memória da referência, funcionalidades novas e pendências priorizadas.
 
 Veja [a versão 2026-09-06.3 — mercado e atualização contínua](docs/MERCADO_2026-09-06.3.md) para a janela móvel, sinais descritivos, ações explícitas de preço e limites.
+
+Veja [a auditoria executada em cinco níveis — versão 2026-09-06.4](docs/AUDITORIA_5_NIVEIS_2026-09-06.4.md) para as correções de decisão, uso, caixa, notícias e testes desta rodada.

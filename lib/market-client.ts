@@ -6,3 +6,7 @@ export function marketPricesUrl(uf: string) {
     ? `${(import.meta as ImportMeta & { env: { BASE_URL: string } }).env.BASE_URL}market-prices/${encodeURIComponent(uf)}.json`
     : `/api/market-prices?uf=${encodeURIComponent(uf)}`;
 }
+
+export function marketNewsUrl() {
+  return `${(import.meta as ImportMeta & { env: { BASE_URL?: string } }).env.BASE_URL ?? '/'}market-prices/fundamentals.json`;
+}

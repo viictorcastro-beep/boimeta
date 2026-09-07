@@ -68,6 +68,17 @@ assert.deepEqual((await (await request(pricePath)).json()).quotes, original.quot
 network = async () => new Response(JSON.stringify({ ...original, history: [], quotes: [original.quotes[0]] }));
 assert.equal((await (await request(pricePath)).json()).quotes.length, original.quotes.length, 'Partial response must not erase saved products');
 assert.equal((await (await request(pricePath)).json()).history.length, original.history.length, 'Partial snapshot must not erase dated history');
+const newsPath = manifest.scope + 'market-prices/fundamentals.json';
+const originalNews = JSON.parse(readFileSync(new URL('market-prices/fundamentals.json', root), 'utf8'));
+network = async () => { throw new Error('offline'); };
+assert.deepEqual((await (await request(newsPath)).json()).items, originalNews.items);
+const freshNews = { ...originalNews, collectedAt: '2026-12-01T00:00:00Z' };
+network = async () => new Response(JSON.stringify(freshNews));
+assert.equal((await (await request(newsPath)).json()).collectedAt, freshNews.collectedAt);
+network = async () => new Response(JSON.stringify(originalNews));
+assert.equal((await (await request(newsPath)).json()).collectedAt, freshNews.collectedAt, 'Stale network must not replace newer news');
+network = async () => new Response('<html>upstream error</html>');
+assert.deepEqual((await (await request(newsPath)).json()).items, freshNews.items);
 handlers.message({ data: { type: 'ACTIVATE_UPDATE' } });
 assert.equal(skip, 1);
 console.log('PWA: manifest, PNG dimensions, complete precache, cache isolation, explicit updates, offline shell, dated fallback and partial-market preservation OK.');

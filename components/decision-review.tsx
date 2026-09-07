@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/numeric-input';
 import {
   Table,
   TableHeader,
@@ -63,15 +64,14 @@ function Field({
   return (
     <label className="block text-sm">
       <span>{label}</span>
-      <Input
+      <NumericInput
         className="mt-1 bg-white font-mono"
-        type="number"
         min={0}
         max={max}
-        step="any"
+        step={0.01}
         value={Number(value.toFixed(4))}
-        onChange={(e) => {
-          const v = Number(e.target.value);
+        onValueChange={(numericValue) => {
+          const v = numericValue;
           if (Number.isFinite(v)) onChange(Math.max(0, Math.min(max, v)));
         }}
       />
@@ -472,18 +472,17 @@ export function DecisionReview(p: Props) {
                 <TableRow key={r.month}>
                   <TableCell>{r.month}</TableCell>
                   <TableCell>
-                    <Input
+                    <NumericInput
                       aria-label={`Produção de pasto no mês ${r.month} em percentual anual`}
                       className="w-24"
-                      type="number"
                       min={0}
                       max={100}
                       value={Number(p.config.monthlyForageShares[i].toFixed(3))}
-                      onChange={(e) => {
+                      onValueChange={(numericValue) => {
                         const next = [...p.config.monthlyForageShares];
                         next[i] = Math.max(
                           0,
-                          Math.min(100, Number(e.target.value) || 0),
+                          Math.min(100, numericValue || 0),
                         );
                         p.onConfig({ ...p.config, monthlyForageShares: next });
                       }}
