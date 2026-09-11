@@ -3,10 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "PR",
   "searchedPeriods": [
+    "10/08/2026 até 04/09/2026",
     "13/07/2026 até 07/08/2026",
     "15/06/2026 até 10/07/2026"
   ],
-  "fetchedAt": "2026-09-10T12:46:35.316Z",
+  "fetchedAt": "2026-09-11T12:45:59.923Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -521,9 +522,7 @@
   "missingProducts": [
     "cotton"
   ],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
