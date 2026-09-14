@@ -3,10 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "GO",
   "searchedPeriods": [
-    "10/08/2026 até 04/09/2026",
-    "15/06/2026 até 10/07/2026"
+    "17/08/2026 até 11/09/2026",
+    "20/07/2026 até 14/08/2026",
+    "22/06/2026 até 17/07/2026"
   ],
-  "fetchedAt": "2026-09-11T12:45:58.532Z",
+  "fetchedAt": "2026-09-14T12:48:22.512Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -15,11 +16,11 @@
       "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
       "uf": "GO",
       "level": "PRODUTOR",
-      "periodStart": "2026-08-31",
-      "periodEnd": "2026-09-04",
-      "sourceDate": "2026-09-04",
-      "rawPeriod": "31/08/26 a 04/09/26",
-      "value": 145.67
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 141.77
     },
     {
       "source": "CONAB",
@@ -28,11 +29,11 @@
       "description": "BOI GORDO   (15 kg)",
       "uf": "GO",
       "level": "PRODUTOR",
-      "periodStart": "2026-08-31",
-      "periodEnd": "2026-09-04",
-      "sourceDate": "2026-09-04",
-      "rawPeriod": "31/08/26 a 04/09/26",
-      "value": 330.01
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 332.63
     },
     {
       "source": "CONAB",
@@ -41,11 +42,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "GO",
       "level": "PRODUTOR",
-      "periodStart": "2026-08-31",
-      "periodEnd": "2026-09-04",
-      "sourceDate": "2026-09-04",
-      "rawPeriod": "31/08/26 a 04/09/26",
-      "value": 58.66
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 59.32
     },
     {
       "source": "CONAB",
@@ -54,11 +55,11 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "GO",
       "level": "PRODUTOR",
-      "periodStart": "2026-08-31",
-      "periodEnd": "2026-09-04",
-      "sourceDate": "2026-09-04",
-      "rawPeriod": "31/08/26 a 04/09/26",
-      "value": 137.94
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 140.65
     }
   ],
   "history": [
@@ -685,12 +686,62 @@
       "sourceDate": "2026-09-04",
       "rawPeriod": "31/08/26 a 04/09/26",
       "value": 137.94
+    },
+    {
+      "source": "CONAB",
+      "product": "cotton",
+      "displayUnit": "R$/15 kg de pluma",
+      "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
+      "uf": "GO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 141.77
+    },
+    {
+      "source": "CONAB",
+      "product": "cattle",
+      "displayUnit": "R$/@ de 15 kg",
+      "description": "BOI GORDO   (15 kg)",
+      "uf": "GO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 332.63
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "GO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 59.32
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "GO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 140.65
     }
   ],
   "missingProducts": [],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "complete",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
