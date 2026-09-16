@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "id": "48056",
+      "topic": "abate",
+      "title": "Trimestrais da pecuária: abate de bovinos e suínos cresce no 2° trimestre",
+      "url": "https://agenciadenoticias.ibge.gov.br/agencia-sala-de-imprensa/2013-agencia-de-noticias/releases/48056-trimestrais-da-pecuaria-abate-de-bovinos-e-suinos-cresce-no-2-trimestre.html",
+      "source": "IBGE",
+      "sourceDate": "2026-09-15",
+      "publishedRaw": "15/09/2026 09:00:00"
+    },
+    {
+      "id": "48048",
+      "topic": "safra",
+      "title": "Em agosto, IBGE prevê safra de 352,9 milhões de toneladas para 2026",
+      "url": "https://agenciadenoticias.ibge.gov.br/agencia-sala-de-imprensa/2013-agencia-de-noticias/releases/48048-em-agosto-ibge-preve-safra-de-352-9-milhoes-de-toneladas-para-2026.html",
+      "source": "IBGE",
+      "sourceDate": "2026-09-15",
+      "publishedRaw": "15/09/2026 09:00:00"
+    },
+    {
       "id": "47805",
       "topic": "abate",
       "title": "Abate de bovinos e suínos crescem, mas abate de frangos recua no 2° tri de 2026",
@@ -136,7 +154,7 @@
       "publishedRaw": "10/12/2025 09:00:00"
     }
   ],
-  "collectedAt": "2026-09-11T12:46:03.018Z",
+  "collectedAt": "2026-09-16T12:47:49.624Z",
   "source": "IBGE",
   "sourceUrl": "https://servicodados.ibge.gov.br/api/docs/noticias?versao=3",
   "note": "Contexto oficial de abate/safra, não previsão de preço; nenhuma manchete altera margem automaticamente."
