@@ -3,10 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "MA",
   "searchedPeriods": [
+    "17/08/2026 até 11/09/2026",
     "20/07/2026 até 14/08/2026",
     "22/06/2026 até 17/07/2026"
   ],
-  "fetchedAt": "2026-09-16T12:47:44.350Z",
+  "fetchedAt": "2026-09-17T12:47:30.586Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -560,9 +561,7 @@
   "missingProducts": [
     "cattle"
   ],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
