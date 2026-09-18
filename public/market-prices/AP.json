@@ -7,7 +7,7 @@
     "20/07/2026 até 14/08/2026",
     "22/06/2026 até 17/07/2026"
   ],
-  "fetchedAt": "2026-09-17T12:47:28.700Z",
+  "fetchedAt": "2026-09-18T12:45:52.977Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,11 +16,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "AP",
       "level": "PRODUTOR",
-      "periodStart": "2026-08-17",
-      "periodEnd": "2026-08-21",
-      "sourceDate": "2026-08-21",
-      "rawPeriod": "17/08/26 a 21/08/26",
-      "value": 75
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 70
     },
     {
       "source": "CONAB",
@@ -29,11 +29,11 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "AP",
       "level": "PRODUTOR",
-      "periodStart": "2026-07-13",
-      "periodEnd": "2026-07-17",
-      "sourceDate": "2026-07-17",
-      "rawPeriod": "13/07/26 a 17/07/26",
-      "value": 127
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 128
     }
   ],
   "history": [
@@ -231,10 +231,35 @@
       "sourceDate": "2026-08-21",
       "rawPeriod": "17/08/26 a 21/08/26",
       "value": 75
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "AP",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 70
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "AP",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 128
     }
   ],
   "missingProducts": [
-    "soy",
     "cotton",
     "cattle"
   ],

@@ -4,9 +4,10 @@
   "uf": "BA",
   "searchedPeriods": [
     "17/08/2026 até 11/09/2026",
+    "20/07/2026 até 14/08/2026",
     "22/06/2026 até 17/07/2026"
   ],
-  "fetchedAt": "2026-09-17T12:47:29.479Z",
+  "fetchedAt": "2026-09-18T12:45:53.455Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -740,9 +741,7 @@
     }
   ],
   "missingProducts": [],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "complete",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
