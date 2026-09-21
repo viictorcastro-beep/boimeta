@@ -3,11 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "TO",
   "searchedPeriods": [
-    "17/08/2026 até 11/09/2026",
-    "20/07/2026 até 14/08/2026",
-    "22/06/2026 até 17/07/2026"
+    "24/08/2026 até 18/09/2026",
+    "27/07/2026 até 21/08/2026",
+    "29/06/2026 até 24/07/2026"
   ],
-  "fetchedAt": "2026-09-18T12:45:56.815Z",
+  "fetchedAt": "2026-09-21T12:45:12.030Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,10 +16,10 @@
       "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
       "uf": "TO",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-07",
-      "periodEnd": "2026-09-11",
-      "sourceDate": "2026-09-11",
-      "rawPeriod": "07/09/26 a 11/09/26",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
       "value": 138
     },
     {
@@ -29,11 +29,11 @@
       "description": "BOI GORDO   (15 kg)",
       "uf": "TO",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-07",
-      "periodEnd": "2026-09-11",
-      "sourceDate": "2026-09-11",
-      "rawPeriod": "07/09/26 a 11/09/26",
-      "value": 335.67
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 335.33
     },
     {
       "source": "CONAB",
@@ -42,10 +42,10 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "TO",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-07",
-      "periodEnd": "2026-09-11",
-      "sourceDate": "2026-09-11",
-      "rawPeriod": "07/09/26 a 11/09/26",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
       "value": 61
     },
     {
@@ -55,11 +55,11 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "TO",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-07",
-      "periodEnd": "2026-09-11",
-      "sourceDate": "2026-09-11",
-      "rawPeriod": "07/09/26 a 11/09/26",
-      "value": 134
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 145
     }
   ],
   "history": [
@@ -738,6 +738,58 @@
       "sourceDate": "2026-09-11",
       "rawPeriod": "07/09/26 a 11/09/26",
       "value": 134
+    },
+    {
+      "source": "CONAB",
+      "product": "cotton",
+      "displayUnit": "R$/15 kg de pluma",
+      "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
+      "uf": "TO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 138
+    },
+    {
+      "source": "CONAB",
+      "product": "cattle",
+      "displayUnit": "R$/@ de 15 kg",
+      "description": "BOI GORDO   (15 kg)",
+      "uf": "TO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 335.33
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "TO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 61
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "TO",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 145
     }
   ],
   "missingProducts": [],

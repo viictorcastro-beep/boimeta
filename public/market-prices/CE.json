@@ -3,11 +3,10 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "CE",
   "searchedPeriods": [
-    "17/08/2026 até 11/09/2026",
-    "20/07/2026 até 14/08/2026",
-    "22/06/2026 até 17/07/2026"
+    "24/08/2026 até 18/09/2026",
+    "27/07/2026 até 21/08/2026"
   ],
-  "fetchedAt": "2026-09-18T12:45:53.442Z",
+  "fetchedAt": "2026-09-21T12:45:06.206Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,11 +15,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "CE",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-07",
-      "periodEnd": "2026-09-11",
-      "sourceDate": "2026-09-11",
-      "rawPeriod": "07/09/26 a 11/09/26",
-      "value": 75.85
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 75.12
     }
   ],
   "history": [
@@ -101,6 +100,19 @@
       "sourceDate": "2026-09-11",
       "rawPeriod": "07/09/26 a 11/09/26",
       "value": 75.85
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "CE",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 75.12
     }
   ],
   "missingProducts": [
@@ -108,7 +120,9 @@
     "cotton",
     "cattle"
   ],
-  "warnings": [],
+  "warnings": [
+    "fetch failed"
+  ],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",

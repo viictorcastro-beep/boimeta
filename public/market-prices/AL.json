@@ -3,11 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "AL",
   "searchedPeriods": [
-    "17/08/2026 até 11/09/2026",
-    "20/07/2026 até 14/08/2026",
-    "22/06/2026 até 17/07/2026"
+    "24/08/2026 até 18/09/2026",
+    "27/07/2026 até 21/08/2026",
+    "29/06/2026 até 24/07/2026"
   ],
-  "fetchedAt": "2026-09-18T12:45:52.761Z",
+  "fetchedAt": "2026-09-21T12:45:05.635Z",
   "quotes": [
     {
       "source": "CONAB",
