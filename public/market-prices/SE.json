@@ -7,7 +7,7 @@
     "27/07/2026 até 21/08/2026",
     "29/06/2026 até 24/07/2026"
   ],
-  "fetchedAt": "2026-09-23T12:47:57.413Z",
+  "fetchedAt": "2026-09-24T12:48:49.025Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -20,7 +20,7 @@
       "periodEnd": "2026-09-18",
       "sourceDate": "2026-09-18",
       "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 80
+      "value": 76
     }
   ],
   "history": [
@@ -204,7 +204,7 @@
       "periodEnd": "2026-09-18",
       "sourceDate": "2026-09-18",
       "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 80
+      "value": 76
     }
   ],
   "missingProducts": [
