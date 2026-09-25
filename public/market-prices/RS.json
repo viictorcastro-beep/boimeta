@@ -3,10 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "RS",
   "searchedPeriods": [
+    "24/08/2026 até 18/09/2026",
     "27/07/2026 até 21/08/2026",
     "29/06/2026 até 24/07/2026"
   ],
-  "fetchedAt": "2026-09-24T12:48:48.114Z",
+  "fetchedAt": "2026-09-25T12:48:33.216Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -405,9 +406,7 @@
     "cotton",
     "cattle"
   ],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
