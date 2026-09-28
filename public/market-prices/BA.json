@@ -3,11 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "BA",
   "searchedPeriods": [
-    "24/08/2026 até 18/09/2026",
-    "27/07/2026 até 21/08/2026",
-    "29/06/2026 até 24/07/2026"
+    "31/08/2026 até 25/09/2026",
+    "03/08/2026 até 28/08/2026",
+    "06/07/2026 até 31/07/2026"
   ],
-  "fetchedAt": "2026-09-25T12:48:30.520Z",
+  "fetchedAt": "2026-09-28T12:54:34.082Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,11 +16,11 @@
       "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
       "uf": "BA",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 143.67
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 142.67
     },
     {
       "source": "CONAB",
@@ -29,11 +29,11 @@
       "description": "BOI GORDO   (15 kg)",
       "uf": "BA",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 344.42
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 347.21
     },
     {
       "source": "CONAB",
@@ -42,11 +42,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "BA",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 67.32
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 67.07
     },
     {
       "source": "CONAB",
@@ -55,11 +55,11 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "BA",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 144.75
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 147.5
     }
   ],
   "history": [
@@ -790,6 +790,58 @@
       "sourceDate": "2026-09-18",
       "rawPeriod": "14/09/26 a 18/09/26",
       "value": 144.75
+    },
+    {
+      "source": "CONAB",
+      "product": "cotton",
+      "displayUnit": "R$/15 kg de pluma",
+      "description": "ALGODÃO EM PLUMA TIPO BÁSICO - SLM 41-4 BRANCO  (15 kg)",
+      "uf": "BA",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 142.67
+    },
+    {
+      "source": "CONAB",
+      "product": "cattle",
+      "displayUnit": "R$/@ de 15 kg",
+      "description": "BOI GORDO   (15 kg)",
+      "uf": "BA",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 347.21
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "BA",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 67.07
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "BA",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 147.5
     }
   ],
   "missingProducts": [],

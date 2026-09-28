@@ -3,11 +3,10 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "RS",
   "searchedPeriods": [
-    "24/08/2026 até 18/09/2026",
-    "27/07/2026 até 21/08/2026",
-    "29/06/2026 até 24/07/2026"
+    "31/08/2026 até 25/09/2026",
+    "06/07/2026 até 31/07/2026"
   ],
-  "fetchedAt": "2026-09-25T12:48:33.216Z",
+  "fetchedAt": "2026-09-28T12:54:38.221Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,11 +15,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "RS",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 60.77
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 61.27
     },
     {
       "source": "CONAB",
@@ -29,11 +28,11 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "RS",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 140.75
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 141.69
     }
   ],
   "history": [
@@ -400,13 +399,41 @@
       "sourceDate": "2026-09-18",
       "rawPeriod": "14/09/26 a 18/09/26",
       "value": 140.75
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "RS",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 61.27
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "RS",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 141.69
     }
   ],
   "missingProducts": [
     "cotton",
     "cattle"
   ],
-  "warnings": [],
+  "warnings": [
+    "fetch failed"
+  ],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",

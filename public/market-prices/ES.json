@@ -3,11 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "ES",
   "searchedPeriods": [
-    "24/08/2026 até 18/09/2026",
-    "27/07/2026 até 21/08/2026",
-    "29/06/2026 até 24/07/2026"
+    "31/08/2026 até 25/09/2026",
+    "03/08/2026 até 28/08/2026",
+    "06/07/2026 até 31/07/2026"
   ],
-  "fetchedAt": "2026-09-25T12:48:31.057Z",
+  "fetchedAt": "2026-09-28T12:54:35.232Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,11 +16,11 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "ES",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-14",
-      "periodEnd": "2026-09-18",
-      "sourceDate": "2026-09-18",
-      "rawPeriod": "14/09/26 a 18/09/26",
-      "value": 85.31
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 85.44
     }
   ],
   "history": [
@@ -205,6 +205,19 @@
       "sourceDate": "2026-09-18",
       "rawPeriod": "14/09/26 a 18/09/26",
       "value": 85.31
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "ES",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 85.44
     }
   ],
   "missingProducts": [
