@@ -4,9 +4,10 @@
   "uf": "CE",
   "searchedPeriods": [
     "31/08/2026 até 25/09/2026",
+    "03/08/2026 até 28/08/2026",
     "06/07/2026 até 31/07/2026"
   ],
-  "fetchedAt": "2026-09-28T12:54:34.640Z",
+  "fetchedAt": "2026-09-29T12:53:37.405Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -133,9 +134,7 @@
     "cotton",
     "cattle"
   ],
-  "warnings": [
-    "fetch failed"
-  ],
+  "warnings": [],
   "completeness": "partial",
   "frequency": "weekly",
   "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
