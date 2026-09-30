@@ -1,1 +1,77 @@
-{"uf":"RN","quotes":[],"error":"Sem referência publicada para esta UF. Use os preços manuais da simulação."}
+{
+  "source": "CONAB · Pesquisa de Preços Agrícolas",
+  "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
+  "uf": "RN",
+  "searchedPeriods": [
+    "31/08/2026 até 25/09/2026",
+    "03/08/2026 até 28/08/2026",
+    "06/07/2026 até 31/07/2026"
+  ],
+  "fetchedAt": "2026-09-30T12:55:45.436Z",
+  "quotes": [
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "RN",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 71.74
+    }
+  ],
+  "history": [
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "RN",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-07",
+      "periodEnd": "2026-09-11",
+      "sourceDate": "2026-09-11",
+      "rawPeriod": "07/09/26 a 11/09/26",
+      "value": 71.74
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "RN",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-14",
+      "periodEnd": "2026-09-18",
+      "sourceDate": "2026-09-18",
+      "rawPeriod": "14/09/26 a 18/09/26",
+      "value": 71.74
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "RN",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-21",
+      "periodEnd": "2026-09-25",
+      "sourceDate": "2026-09-25",
+      "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 71.74
+    }
+  ],
+  "missingProducts": [
+    "soy",
+    "cotton",
+    "cattle"
+  ],
+  "warnings": [],
+  "completeness": "partial",
+  "frequency": "weekly",
+  "legalNote": "Referência semanal observada ao produtor; não é cotação em tempo real nem contrato futuro. Confirme condições de reutilização comercial.",
+  "delivery": "scheduled-snapshot"
+}
