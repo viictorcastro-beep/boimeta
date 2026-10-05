@@ -3,11 +3,11 @@
   "sourceUrl": "https://consultaprecosdemercado.conab.gov.br/",
   "uf": "DF",
   "searchedPeriods": [
-    "31/08/2026 até 25/09/2026",
-    "03/08/2026 até 28/08/2026",
-    "06/07/2026 até 31/07/2026"
+    "07/09/2026 até 02/10/2026",
+    "10/08/2026 até 04/09/2026",
+    "13/07/2026 até 07/08/2026"
   ],
-  "fetchedAt": "2026-10-02T12:51:54.230Z",
+  "fetchedAt": "2026-10-05T12:55:14.348Z",
   "quotes": [
     {
       "source": "CONAB",
@@ -16,10 +16,10 @@
       "description": "MILHO EM GRÃOS   (60 kg)",
       "uf": "DF",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-21",
-      "periodEnd": "2026-09-25",
-      "sourceDate": "2026-09-25",
-      "rawPeriod": "21/09/26 a 25/09/26",
+      "periodStart": "2026-09-28",
+      "periodEnd": "2026-10-02",
+      "sourceDate": "2026-10-02",
+      "rawPeriod": "28/09/26 a 02/10/26",
       "value": 62.13
     },
     {
@@ -29,10 +29,10 @@
       "description": "SOJA EM GRÃOS   (60 kg)",
       "uf": "DF",
       "level": "PRODUTOR",
-      "periodStart": "2026-09-21",
-      "periodEnd": "2026-09-25",
-      "sourceDate": "2026-09-25",
-      "rawPeriod": "21/09/26 a 25/09/26",
+      "periodStart": "2026-09-28",
+      "periodEnd": "2026-10-02",
+      "sourceDate": "2026-10-02",
+      "rawPeriod": "28/09/26 a 02/10/26",
       "value": 148
     }
   ],
@@ -425,6 +425,32 @@
       "periodEnd": "2026-09-25",
       "sourceDate": "2026-09-25",
       "rawPeriod": "21/09/26 a 25/09/26",
+      "value": 148
+    },
+    {
+      "source": "CONAB",
+      "product": "corn",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "MILHO EM GRÃOS   (60 kg)",
+      "uf": "DF",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-28",
+      "periodEnd": "2026-10-02",
+      "sourceDate": "2026-10-02",
+      "rawPeriod": "28/09/26 a 02/10/26",
+      "value": 62.13
+    },
+    {
+      "source": "CONAB",
+      "product": "soy",
+      "displayUnit": "R$/sc 60 kg",
+      "description": "SOJA EM GRÃOS   (60 kg)",
+      "uf": "DF",
+      "level": "PRODUTOR",
+      "periodStart": "2026-09-28",
+      "periodEnd": "2026-10-02",
+      "sourceDate": "2026-10-02",
+      "rawPeriod": "28/09/26 a 02/10/26",
       "value": 148
     }
   ],
