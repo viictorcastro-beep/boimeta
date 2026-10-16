@@ -1,6 +1,15 @@
 {
   "items": [
     {
+      "id": "48289",
+      "topic": "safra",
+      "title": "Em setembro, safra prevista pelo IBGE para 2026 é de 354,5 milhões de toneladas",
+      "url": "https://agenciadenoticias.ibge.gov.br/agencia-sala-de-imprensa/2013-agencia-de-noticias/releases/48289-em-setembro-safra-prevista-pelo-ibge-para-2026-e-de-354-5-milhoes-de-toneladas.html",
+      "source": "IBGE",
+      "sourceDate": "2026-10-15",
+      "publishedRaw": "15/10/2026 09:00:00"
+    },
+    {
       "id": "48056",
       "topic": "abate",
       "title": "Trimestrais da pecuária: abate de bovinos e suínos cresce no 2° trimestre",
@@ -154,7 +163,7 @@
       "publishedRaw": "10/12/2025 09:00:00"
     }
   ],
-  "collectedAt": "2026-10-14T12:48:20.861Z",
+  "collectedAt": "2026-10-16T12:49:16.333Z",
   "source": "IBGE",
   "sourceUrl": "https://servicodados.ibge.gov.br/api/docs/noticias?versao=3",
   "note": "Contexto oficial de abate/safra, não previsão de preço; nenhuma manchete altera margem automaticamente."
