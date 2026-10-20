@@ -1,6 +1,6 @@
 {
-  "attemptedAt": "2026-10-19T12:52:04.165Z",
-  "completedAt": "2026-10-19T12:52:10.738Z",
+  "attemptedAt": "2026-10-20T12:50:03.014Z",
+  "completedAt": "2026-10-20T12:50:11.971Z",
   "requestedUfs": [
     "AC",
     "AL",
@@ -33,12 +33,12 @@
   "updatedUfs": 21,
   "failures": [
     {
-      "uf": "AC",
-      "error": "A Conab não retornou preços válidos recentes para AC."
-    },
-    {
       "uf": "AL",
       "error": "A Conab não retornou preços válidos recentes para AL."
+    },
+    {
+      "uf": "AC",
+      "error": "A Conab não retornou preços válidos recentes para AC."
     },
     {
       "uf": "AM",
