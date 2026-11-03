@@ -1,6 +1,6 @@
 {
-  "attemptedAt": "2026-11-02T12:36:31.291Z",
-  "completedAt": "2026-11-02T12:36:39.072Z",
+  "attemptedAt": "2026-11-03T12:36:39.471Z",
+  "completedAt": "2026-11-03T12:36:46.405Z",
   "requestedUfs": [
     "AC",
     "AL",
@@ -45,16 +45,20 @@
       "error": "A Conab não retornou preços válidos recentes para AL."
     },
     {
-      "uf": "AM",
-      "error": "A Conab não retornou preços válidos recentes para AM."
+      "uf": "BA",
+      "error": "A Conab não retornou preços válidos recentes para BA."
     },
     {
       "uf": "CE",
       "error": "A Conab não retornou preços válidos recentes para CE."
     },
     {
-      "uf": "BA",
-      "error": "A Conab não retornou preços válidos recentes para BA."
+      "uf": "AM",
+      "error": "A Conab não retornou preços válidos recentes para AM."
+    },
+    {
+      "uf": "ES",
+      "error": "A Conab não retornou preços válidos recentes para ES."
     },
     {
       "uf": "DF",
@@ -65,24 +69,16 @@
       "error": "A Conab não retornou preços válidos recentes para GO."
     },
     {
-      "uf": "ES",
-      "error": "A Conab não retornou preços válidos recentes para ES."
-    },
-    {
-      "uf": "MA",
-      "error": "A Conab não retornou preços válidos recentes para MA."
+      "uf": "MT",
+      "error": "A Conab não retornou preços válidos recentes para MT."
     },
     {
       "uf": "MS",
       "error": "A Conab não retornou preços válidos recentes para MS."
     },
     {
-      "uf": "MT",
-      "error": "A Conab não retornou preços válidos recentes para MT."
-    },
-    {
-      "uf": "MG",
-      "error": "A Conab não retornou preços válidos recentes para MG."
+      "uf": "MA",
+      "error": "A Conab não retornou preços válidos recentes para MA."
     },
     {
       "uf": "PB",
@@ -91,6 +87,10 @@
     {
       "uf": "PA",
       "error": "A Conab não retornou preços válidos recentes para PA."
+    },
+    {
+      "uf": "MG",
+      "error": "A Conab não retornou preços válidos recentes para MG."
     },
     {
       "uf": "PR",
@@ -109,36 +109,36 @@
       "error": "A Conab não retornou preços válidos recentes para RN."
     },
     {
-      "uf": "RJ",
-      "error": "A Conab não retornou preços válidos recentes para RJ."
-    },
-    {
       "uf": "RS",
       "error": "A Conab não retornou preços válidos recentes para RS."
+    },
+    {
+      "uf": "RJ",
+      "error": "A Conab não retornou preços válidos recentes para RJ."
     },
     {
       "uf": "RR",
       "error": "A Conab não retornou preços válidos recentes para RR."
     },
     {
-      "uf": "RO",
-      "error": "A Conab não retornou preços válidos recentes para RO."
-    },
-    {
       "uf": "SC",
       "error": "A Conab não retornou preços válidos recentes para SC."
     },
     {
-      "uf": "SP",
-      "error": "A Conab não retornou preços válidos recentes para SP."
+      "uf": "RO",
+      "error": "A Conab não retornou preços válidos recentes para RO."
+    },
+    {
+      "uf": "SE",
+      "error": "A Conab não retornou preços válidos recentes para SE."
     },
     {
       "uf": "TO",
       "error": "A Conab não retornou preços válidos recentes para TO."
     },
     {
-      "uf": "SE",
-      "error": "A Conab não retornou preços válidos recentes para SE."
+      "uf": "SP",
+      "error": "A Conab não retornou preços válidos recentes para SP."
     }
   ],
   "lookbackWeeks": 12,
