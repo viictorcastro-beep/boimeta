@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "id": "48680",
+      "topic": "abate",
+      "title": "Abate de bovinos tem queda anual no terceiro trimestre, enquanto o de suínos e frangos avança",
+      "url": "https://agenciadenoticias.ibge.gov.br/agencia-noticias/2012-agencia-de-noticias/noticias/48680-abate-de-bovinos-tem-queda-anual-no-terceiro-trimestre-enquanto-o-de-suinos-e-frangos-avanca.html",
+      "source": "IBGE",
+      "sourceDate": "2026-11-19",
+      "publishedRaw": "19/11/2026 09:00:00"
+    },
+    {
+      "id": "48679",
+      "topic": "abate",
+      "title": "Abate de bovinos cai no terceiro trimestre, enquanto o de suínos e frangos avança",
+      "url": "https://agenciadenoticias.ibge.gov.br/agencia-sala-de-imprensa/2013-agencia-de-noticias/releases/48679-abate-de-bovinos-cai-no-terceiro-trimestre-enquanto-o-de-suinos-e-frangos-avanca.html",
+      "source": "IBGE",
+      "sourceDate": "2026-11-19",
+      "publishedRaw": "19/11/2026 09:00:00"
+    },
+    {
       "id": "48609",
       "topic": "safra",
       "title": "Primeiro prognóstico indica queda de 2,6% na safra de 2027, totalizando 346,6 milhões de toneladas",
@@ -181,7 +199,7 @@
       "publishedRaw": "10/12/2025 09:00:00"
     }
   ],
-  "collectedAt": "2026-11-18T12:37:57.632Z",
+  "collectedAt": "2026-11-19T12:38:34.324Z",
   "source": "IBGE",
   "sourceUrl": "https://servicodados.ibge.gov.br/api/docs/noticias?versao=3",
   "note": "Contexto oficial de abate/safra, não previsão de preço; nenhuma manchete altera margem automaticamente."
